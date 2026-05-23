@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import LoginForm from "../components/auth/LoginForm";
 import RegisterForm from "../components/auth/RegisterForm";
@@ -23,7 +22,7 @@ export default function AuthPage() {
           {/* Navigation Links (Desktop) */}
           <nav className="flex items-center gap-gutter">
             <Link
-              to="/"
+              to="/dashboard"
               className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg"
             >
               Dashboard

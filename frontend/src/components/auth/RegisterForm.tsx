@@ -60,7 +60,7 @@ export default function RegisterForm() {
     try {
       await register({ name, email, password });
       setTimeout(() => {
-        navigate("/");
+        navigate("/dashboard");
       }, 1000);
     } catch (err) {
       // Error handled by store

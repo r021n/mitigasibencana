@@ -18,20 +18,20 @@ export default function HomePage() {
           {/* Navigation Links (Desktop) */}
           <nav className="flex items-center gap-gutter">
             <Link
-              to="#"
-              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg transition-all duration-200"
+              to="/dashboard"
+              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg"
             >
               Dashboard
             </Link>
             <Link
               to="#"
-              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg transition-all duration-200"
+              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg"
             >
               Kumpulan Video
             </Link>
             <Link
               to="#"
-              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg transition-all duration-200"
+              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg"
             >
               Tentang Kami
             </Link>

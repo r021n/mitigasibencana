@@ -41,7 +41,7 @@ export default function LoginForm() {
       await login({ email, password });
       // Redirect after brief delay
       setTimeout(() => {
-        navigate("/");
+        navigate("/dashboard");
       }, 1000);
     } catch (err) {
       // Error handled by store
