@@ -22,10 +22,31 @@ interface AuthState {
   initialize: () => void;
 }
 
+const getInitialState = () => {
+  const token = localStorage.getItem("auth_token");
+  const userInfo = localStorage.getItem("user_info");
+  if (token && userInfo) {
+    try {
+      const user = JSON.parse(userInfo);
+      return {
+        user,
+        token,
+        status: user.status as "student" | "teacher" | "admin" | null,
+      };
+    } catch (e) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user_info");
+    }
+  }
+  return { user: null, token: null, status: null };
+};
+
+const initialState = getInitialState();
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-  status: null,
+  user: initialState.user,
+  token: initialState.token,
+  status: initialState.status,
   isLoading: false,
   error: null,
   success: null,

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { sign } from "hono/jwt";
+import { sign, verify } from "hono/jwt";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
@@ -95,6 +95,56 @@ auth.post("/login", async (c) => {
     return c.json({ user: userWithoutPassword, token }, 200);
   } catch (error) {
     console.error("Login Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+auth.post("/change-password", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    const token = authHeader.split(" ")[1];
+    
+    // Verify token
+    let payload;
+    try {
+      payload = await verify(token, JWT_SECRET, {alg: 'HS256'});
+    } catch (e) {
+      return c.json({ error: "Invalid token" }, 401);
+    }
+
+    const userId = payload.sub as string;
+    const body = await c.req.json();
+    const { oldPassword, newPassword } = body;
+
+    if (!oldPassword || !newPassword) {
+      return c.json({ error: "Old password and new password are required" }, 400);
+    }
+
+    // Find user
+    const foundUsers = await db.select().from(users).where(eq(users.id, userId));
+    if (foundUsers.length === 0) {
+      return c.json({ error: "User not found" }, 404);
+    }
+    const user = foundUsers[0];
+
+    // Verify old password
+    const isValid = await Bun.password.verify(oldPassword, user.password);
+    if (!isValid) {
+      return c.json({ error: "Kata sandi lama salah" }, 400); // Send Indonesian error matching UI if possible
+    }
+
+    // Hash new password
+    const hashedNewPassword = await Bun.password.hash(newPassword);
+
+    // Update password in DB
+    await db.update(users).set({ password: hashedNewPassword }).where(eq(users.id, userId));
+
+    return c.json({ success: true, message: "Kata sandi berhasil diubah" }, 200);
+  } catch (error) {
+    console.error("Change Password Error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });

@@ -58,6 +58,12 @@ function DashboardInner() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    if (!user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
   // Fallback profile if user is not logged in (e.g., direct preview)
   const displayUser = user || {
     name: "Dr. Sarah Adams",
@@ -229,6 +235,7 @@ function DashboardInner() {
                   <SidebarMenuButton
                     isActive={true}
                     title={!open ? "Kelola Video" : undefined}
+                    onClick={() => navigate("/dashboard")}
                   >
                     <span
                       className="material-symbols-outlined"
@@ -237,6 +244,21 @@ function DashboardInner() {
                       video_library
                     </span>
                     {open && <span>Kelola Video</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={false}
+                    title={!open ? "Pengaturan" : undefined}
+                    onClick={() => navigate("/settings")}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontVariationSettings: "'FILL' 0" }}
+                    >
+                      settings
+                    </span>
+                    {open && <span>Pengaturan</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

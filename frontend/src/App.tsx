@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
+import UserInfoPage from './pages/UserInfoPage';
 import { useAuthStore } from './store/authStore';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/settings" element={<UserInfoPage />} />
       </Routes>
     </div>
   );

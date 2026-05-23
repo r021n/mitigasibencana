@@ -37,4 +37,10 @@ export const authApi = {
       body: JSON.stringify(userData),
     });
   },
+  changePassword: async (passwordData: any) => {
+    return fetchWithAuth("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify(passwordData),
+    });
+  },
 };
