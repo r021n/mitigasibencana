@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useSidebarStore } from "../../store/sidebarStore";
 
 // Sidebar Context for open/closed state management
 interface SidebarContextType {
@@ -19,20 +20,14 @@ export function useSidebar() {
   return context;
 }
 
-export interface SidebarProviderProps extends React.ComponentProps<"div"> {
-  defaultOpen?: boolean;
-}
+export interface SidebarProviderProps extends React.ComponentProps<"div"> {}
 
 export function SidebarProvider({
-  defaultOpen = true,
   children,
   className = "",
   ...props
 }: SidebarProviderProps) {
-  const [open, setOpen] = React.useState(defaultOpen);
-  const toggleSidebar = React.useCallback(() => {
-    setOpen((prev) => !prev);
-  }, []);
+  const { open, setOpen, toggleSidebar } = useSidebarStore();
 
   return (
     <SidebarContext.Provider value={{ open, setOpen, toggleSidebar }}>

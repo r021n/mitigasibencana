@@ -2,17 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/api";
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  useSidebar,
-} from "../components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "../components/ui/sidebar";
+import Sidebar from "../components/layout/Sidebar";
 
 export default function UserInfoPage() {
   return (
@@ -23,8 +14,8 @@ export default function UserInfoPage() {
 }
 
 function UserInfoInner() {
-  const { open, toggleSidebar } = useSidebar();
-  const { user, logout } = useAuthStore();
+  const { open } = useSidebar();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -47,14 +38,6 @@ function UserInfoInner() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-
-  const handleOpenLogoutModal = () => setIsLogoutModalOpen(true);
-  const handleCloseLogoutModal = () => setIsLogoutModalOpen(false);
-  const handleConfirmLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,103 +77,7 @@ function UserInfoInner() {
 
   return (
     <>
-      <Sidebar>
-        <div
-          className={`mb-6 flex items-center ${open ? "justify-between" : "justify-center"} min-h-`}
-        >
-          {open && (
-            <div className="select-none">
-              <h1 className="font-headline-sm text-headline-sm text-primary tracking-tight font-bold">
-                Portal Guru
-              </h1>
-            </div>
-          )}
-          <button
-            onClick={toggleSidebar}
-            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg cursor-pointer border-none bg-transparent flex items-center justify-center"
-            title={open ? "Perkecil Sidebar" : "Perluas Sidebar"}
-          >
-            <span className="material-symbols-outlined text-2xl font-bold">
-              {open ? "menu_open" : "menu"}
-            </span>
-          </button>
-        </div>
-
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={false}
-                    title={!open ? "Kelola Video" : undefined}
-                    onClick={() => navigate("/dashboard")}
-                  >
-                    <span
-                      className="material-symbols-outlined"
-                      style={{ fontVariationSettings: "'FILL' 0" }}
-                    >
-                      video_library
-                    </span>
-                    {open && <span>Kelola Video</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={true}
-                    title={!open ? "Pengaturan" : undefined}
-                    onClick={() => navigate("/settings")}
-                  >
-                    <span
-                      className="material-symbols-outlined"
-                      style={{ fontVariationSettings: "'FILL' 1" }}
-                    >
-                      settings
-                    </span>
-                    {open && <span>Pengaturan</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-
-        <div className="mt-auto pt-6 border-t border-outline-variant/10">
-          {open ? (
-            <div className="bg-surface-container rounded-xl p-3 flex items-center justify-between gap-2 shadow-[inset_1px_1px_3px_rgba(11,28,48,0.05)] border border-outline-variant/5">
-              <div className="min-w-0 flex-1 select-none">
-                <p className="font-label-md text-label-md text-on-surface font-bold truncate">
-                  {displayUser.name}
-                </p>
-                <p className="font-caption text-caption text-on-surface-variant capitalize mt-0.5">
-                  {displayUser.status}
-                </p>
-              </div>
-              <button
-                onClick={handleOpenLogoutModal}
-                className="p-2 text-on-surface-variant hover:text-error hover:bg-error-container/20 rounded-lg cursor-pointer border-none bg-transparent flex items-center justify-center"
-                title="Keluar dari Akun"
-              >
-                <span className="material-symbols-outlined text-xl font-semibold">
-                  logout
-                </span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-3">
-              <button
-                onClick={handleOpenLogoutModal}
-                className="w-12 h-12 bg-error-container/10 text-error hover:bg-error-container/30 rounded-xl cursor-pointer border-none flex items-center justify-center"
-                title="Keluar dari Akun"
-              >
-                <span className="material-symbols-outlined text-xl font-semibold">
-                  logout
-                </span>
-              </button>
-            </div>
-          )}
-        </div>
-      </Sidebar>
+      <Sidebar />
 
       <main
         className={`flex-grow w-full p-margin-desktop overflow-y-auto ${open ? "ml-64" : "ml-20"}`}
@@ -361,58 +248,6 @@ function UserInfoInner() {
         </div>
       </main>
 
-      {/* Logout Modal */}
-      {isLogoutModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6"
-          role="dialog"
-        >
-          <div
-            className="fixed inset-0 bg-inverse-surface/40 backdrop-blur-"
-            onClick={handleCloseLogoutModal}
-          ></div>
-          <div className="relative bg-surface-container-lowest rounded- w-full max-w-sm p-8 clay-modal z-10 shadow-2xl border border-outline-variant/10">
-            <button
-              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container cursor-pointer clay-btn border-none"
-              onClick={handleCloseLogoutModal}
-            >
-              <span className="material-symbols-outlined text-">close</span>
-            </button>
-            <div className="mb-6 pr-8 select-none text-center">
-              <div className="w-12 h-12 bg-error-container/20 rounded-2xl flex items-center justify-center text-error mx-auto mb-4 shadow-inner">
-                <span
-                  className="material-symbols-outlined text-"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  logout
-                </span>
-              </div>
-              <h3 className="font-headline-sm text-headline-sm text-on-surface">
-                Konfirmasi Keluar
-              </h3>
-              <p className="font-caption text-caption text-on-surface-variant mt-2">
-                Apakah Anda yakin ingin keluar dari akun Anda? Anda harus masuk
-                kembali untuk mengakses halaman ini.
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-3 mt-6 border-t border-outline-variant/10 pt-4">
-              <button
-                className="px-5 py-2.5 rounded-xl font-label-md text-label-md text-on-surface-variant hover:bg-surface-container cursor-pointer border-none bg-transparent font-semibold"
-                onClick={handleCloseLogoutModal}
-                type="button"
-              >
-                Batal
-              </button>
-              <button
-                className="px-6 py-2.5 rounded-xl font-label-md text-label-md bg-error text-on-error hover:bg-error/90 cursor-pointer font-bold border-none"
-                onClick={handleConfirmLogout}
-              >
-                Ya, Keluar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

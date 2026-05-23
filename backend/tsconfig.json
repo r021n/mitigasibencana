@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "strict": true,
+    "module": "esnext",
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
+    "jsxImportSource": "hono/jsx",
+    "moduleResolution": "bundler",
+    "types": ["@types/bun"],
+    "skipLibCheck": true
   }
 }

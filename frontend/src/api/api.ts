@@ -44,3 +44,35 @@ export const authApi = {
     });
   },
 };
+
+export const videoApi = {
+  getAll: async (search?: string) => {
+    const endpoint = search ? `/videos?q=${encodeURIComponent(search)}` : "/videos";
+    return fetchWithAuth(endpoint, {
+      method: "GET",
+    });
+  },
+  getById: async (id: string) => {
+    return fetchWithAuth(`/videos/${id}`, {
+      method: "GET",
+    });
+  },
+  create: async (videoData: { title: string; description: string; youtubeLink: string; category: string; status: "publish" | "draft" }) => {
+    return fetchWithAuth("/videos", {
+      method: "POST",
+      body: JSON.stringify(videoData),
+    });
+  },
+  edit: async (id: string, videoData: { title?: string; description?: string; youtubeLink?: string; category?: string; status?: "publish" | "draft" }) => {
+    return fetchWithAuth(`/videos/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(videoData),
+    });
+  },
+  delete: async (id: string) => {
+    return fetchWithAuth(`/videos/${id}`, {
+      method: "DELETE",
+    });
+  },
+};
+

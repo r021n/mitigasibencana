@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import auth from './routes/auth'
+import videos from './routes/videos'
 
 const app = new Hono()
 
@@ -11,5 +12,6 @@ app.get('/', (c) => {
 })
 
 app.route('/auth', auth)
+app.route('/videos', videos)
 
 export default app
