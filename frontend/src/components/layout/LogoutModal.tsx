@@ -80,7 +80,7 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
             Batal
           </button>
           <button
-            className="px-6 py-2.5 rounded-xl font-label-md text-label-md bg-error text-on-error hover:bg-error/90 cursor-pointer font-bold border-none"
+            className="px-6 py-2.5 rounded-xl font-label-md text-label-md bg-error text-on-error hover:bg-error/90 cursor-pointer font-bold border-none clay-btn"
             onClick={handleConfirmLogout}
           >
             Ya, Keluar
