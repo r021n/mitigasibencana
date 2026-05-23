@@ -1,5 +1,5 @@
-import React from "react";
 import { Link } from "react-router-dom";
+import mitigationImg from "../assets/mitigation.png";
 
 export default function HomePage() {
   return (
@@ -38,9 +38,12 @@ export default function HomePage() {
           </nav>
 
           {/* Trailing Action */}
-          <button className="block font-label-md text-label-md bg-primary text-on-primary rounded-full px-6 py-2 shadow-[0_6px_16px_rgba(0,74,198,0.25),inset_2px_2px_4px_rgba(255,255,255,0.3)] active:scale-95 active:translate-y-1 active:shadow-none transition-all duration-200">
+          <Link
+            to="/register"
+            className="block font-label-md text-label-md bg-primary text-on-primary rounded-full px-6 py-2 shadow-[0_6px_16px_rgba(0,74,198,0.25),inset_2px_2px_4px_rgba(255,255,255,0.3)] active:scale-95 active:translate-y-0.5 active:shadow-none font-semibold text-center"
+          >
             Register
-          </button>
+          </Link>
         </div>
       </header>
 
@@ -69,16 +72,12 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right Illustration (Claymorphic) */}
-          <div className="flex-1 relative w-full max-w-lg mx-auto">
-            {/* Decorative background blob for depth */}
-            <div className="absolute inset-0 bg-primary-container rounded-full blur-3xl opacity-20 -z-10 transform translate-y-8"></div>
-            <img
-              className="w-full h-auto rounded-[2rem] shadow-[0_20px_40px_rgba(0,74,198,0.1),inset_2px_2px_8px_rgba(255,255,255,0.9)] object-cover aspect-square"
-              alt="A highly detailed 3D claymorphic illustration of a stylized, friendly globe surrounded by diverse science teacher characters holding abstract learning tools."
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaTaMQtFeeTQExrV724cvzWQRArM-ejkPPCWKDBxB1aAP6YADXsFNlcfS5Wb7QXjrxRRjHjcmn0fSg9CUeDdtqVgJ4l_RkBYsoWZcvvh7WqpETEf5PKTMq6HxkoC_mto2yOUxF3mDmxs-ltoxIqfz-SCxUb0AlnT5jbQxOwAyjGokaczC83vNHIowAsmqPN6eovAxkbFVcr7QXwFQ1pGlKJ7o3zi_vmYD8fLOS7nhLdK3UFVyWVtb57cpXE6t7Vo1H93VtjXFwTJAj"
-            />
-          </div>
+          {/* Right Illustration */}
+          <img
+            className="flex-1 w-full max-w-lg mx-auto h-auto object-contain"
+            alt="Mitigasi Bencana"
+            src={mitigationImg}
+          />
         </section>
 
         {/* Our Mission Section (Asymmetric Bento Card) */}

@@ -1,2 +1,13 @@
 # deps
 node_modules/
+
+# local database
+sqlite.db
+sqlite.db-journal
+sqlite.db-shm
+sqlite.db-wal
+
+# drizzle output or backups if any
+.env
+.env.local
+
