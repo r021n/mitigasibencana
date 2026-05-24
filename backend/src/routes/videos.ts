@@ -71,6 +71,32 @@ videosRoute.get("/public", async (c) => {
   }
 });
 
+// GET single public video (published only)
+videosRoute.get("/public/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const result = await db
+      .select({
+        id: videos.id,
+        title: videos.title,
+        description: videos.description,
+        youtubeLink: videos.youtubeLink,
+        category: videos.category,
+      })
+      .from(videos)
+      .where(and(eq(videos.id, id), eq(videos.status, "publish")));
+
+    if (result.length === 0) {
+      return c.json({ error: "Video not found or not published" }, 404);
+    }
+
+    return c.json(result[0]);
+  } catch (error) {
+    console.error("Get Public Video By ID Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
 // Middleware to authenticate JWT
 videosRoute.use("*", async (c, next) => {
   try {

@@ -67,6 +67,11 @@ export const videoApi = {
       method: "GET",
     });
   },
+  getPublicById: async (id: string) => {
+    return fetchWithAuth(`/videos/public/${id}`, {
+      method: "GET",
+    });
+  },
   create: async (videoData: { title: string; description: string; youtubeLink: string; category: string; status: "publish" | "draft" }) => {
     return fetchWithAuth("/videos", {
       method: "POST",
@@ -86,3 +91,22 @@ export const videoApi = {
   },
 };
 
+export const commentApi = {
+  getByVideoId: async (videoId: string) => {
+    return fetchWithAuth(`/comments/${videoId}`, {
+      method: "GET",
+    });
+  },
+  createComment: async (data: { videoId: string; content: string; guestName?: string }) => {
+    return fetchWithAuth("/comments", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+  createReply: async (data: { commentId: string; content: string; guestName?: string }) => {
+    return fetchWithAuth("/comments/reply", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+};

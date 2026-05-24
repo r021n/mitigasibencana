@@ -1,4 +1,4 @@
-import { sqliteTable, text, primaryKey } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, primaryKey, integer } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -33,3 +33,20 @@ export const userVideos = sqliteTable("user_videos", {
   pk: primaryKey({ columns: [table.userId, table.videoId] }),
 }));
 
+export const comments = sqliteTable("comments", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  videoId: text("video_id").notNull().references(() => videos.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  guestName: text("guest_name"),
+  content: text("content").notNull(),
+  createdAt: integer("created_at").notNull().$defaultFn(() => Date.now()),
+});
+
+export const commentReplies = sqliteTable("comment_replies", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  commentId: text("comment_id").notNull().references(() => comments.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  guestName: text("guest_name"),
+  content: text("content").notNull(),
+  createdAt: integer("created_at").notNull().$defaultFn(() => Date.now()),
+});

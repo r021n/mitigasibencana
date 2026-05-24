@@ -179,11 +179,9 @@ export default function VideoCollectionPage() {
                   : "https://via.placeholder.com/640x360.png?text=No+Thumbnail";
 
                 return (
-                  <a
+                  <Link
                     key={video.id}
-                    href={video.youtubeLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    to={`/videos/${video.id}`}
                     className="flex flex-col gap-3 group cursor-pointer"
                   >
                     <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-surface-container-high">
@@ -218,7 +216,7 @@ export default function VideoCollectionPage() {
                         {video.category}
                       </span>
                     </div>
-                  </a>
+                  </Link>
                 );
               })}
             </div>
