@@ -4,7 +4,8 @@ import { useAuthStore } from "../store/authStore";
 import { videoApi } from "../api/api";
 import { SidebarProvider, useSidebar } from "../components/ui/sidebar";
 import Sidebar from "../components/layout/Sidebar";
-import VideoFormModal from "../components/layout/VideoFormModal";
+import VideoFormModal from "../components/layout/dashboard/VideoFormModal";
+import DeleteVideoModal from "../components/layout/dashboard/DeleteVideoModal";
 
 interface Video {
   id: string;
@@ -42,6 +43,11 @@ function DashboardInner() {
   // Video Form Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalVideo, setModalVideo] = useState<Video | null>(null);
+
+  // Delete Video Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [videoToDelete, setVideoToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Helper to assign Material symbols based on category and title keywords
   const detectIcon = (category: string, title: string): string => {
@@ -163,14 +169,24 @@ function DashboardInner() {
   };
 
   // Delete video handler
-  const handleDeleteVideo = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus video ini?")) {
-      try {
-        await videoApi.delete(id);
-        setVideos((prev) => prev.filter((video) => video.id !== id));
-      } catch (err: any) {
-        alert(err.message || "Gagal menghapus video");
-      }
+  const handleDeleteClick = (id: string) => {
+    setVideoToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!videoToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await videoApi.delete(videoToDelete);
+      setVideos((prev) => prev.filter((video) => video.id !== videoToDelete));
+      setIsDeleteModalOpen(false);
+      setVideoToDelete(null);
+    } catch (err: any) {
+      alert(err.message || "Gagal menghapus video");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -359,7 +375,7 @@ function DashboardInner() {
                             </button>
                             <button
                               aria-label="Hapus Video"
-                              onClick={() => handleDeleteVideo(video.id)}
+                              onClick={() => handleDeleteClick(video.id)}
                               className="p-2 text-outline hover:text-error bg-error-container/10 hover:bg-error-container/40 rounded-lg cursor-pointer border-none flex items-center justify-center"
                             >
                               <span
@@ -386,6 +402,15 @@ function DashboardInner() {
         video={modalVideo}
         onClose={handleCloseModal}
         onSubmit={handleModalSubmit}
+      />
+      <DeleteVideoModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setVideoToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
       />
     </>
   );

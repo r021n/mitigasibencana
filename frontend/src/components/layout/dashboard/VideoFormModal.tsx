@@ -477,26 +477,31 @@ export default function VideoFormModal({
                 >
                   Kategori Video
                 </label>
-                <select
-                  className="w-full rounded-xl border border-outline-variant/50 bg-surface focus:border-primary focus:outline-none shadow-inner font-body-md text-body-md px-4 py-3 cursor-pointer"
-                  id="video-category"
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                  required
-                >
-                  <option value="tanah longsor">Tanah Longsor</option>
-                  <option value="angin puting beliung">
-                    Angin Puting Beliung
-                  </option>
-                  <option value="gempa bumi">Gempa Bumi</option>
-                  <option value="banjir">Banjir</option>
-                  <option value="tsunami">Tsunami</option>
-                  <option value="letusan gunung berapi">
-                    Letusan Gunung Berapi
-                  </option>
-                </select>
+                <div className="relative">
+                  <select
+                    className="w-full rounded-xl border border-outline-variant/50 bg-surface focus:border-primary focus:outline-none shadow-inner font-body-md text-body-md pl-4 pr-10 py-3 cursor-pointer appearance-none"
+                    id="video-category"
+                    value={formData.category}
+                    onChange={(e) =>
+                      setFormData({ ...formData, category: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="tanah longsor">Tanah Longsor</option>
+                    <option value="angin puting beliung">
+                      Angin Puting Beliung
+                    </option>
+                    <option value="gempa bumi">Gempa Bumi</option>
+                    <option value="banjir">Banjir</option>
+                    <option value="tsunami">Tsunami</option>
+                    <option value="letusan gunung berapi">
+                      Letusan Gunung Berapi
+                    </option>
+                  </select>
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-xl pointer-events-none select-none">
+                    keyboard_arrow_down
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -506,20 +511,25 @@ export default function VideoFormModal({
                 >
                   Status
                 </label>
-                <select
-                  className="w-full rounded-xl border border-outline-variant/50 bg-surface focus:border-primary focus:outline-none shadow-inner font-body-md text-body-md px-4 py-3 cursor-pointer"
-                  id="video-status"
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      status: e.target.value as "publish" | "draft",
-                    })
-                  }
-                >
-                  <option value="draft">Draft (Privat)</option>
-                  <option value="publish">Publish (Terlihat oleh Siswa)</option>
-                </select>
+                <div className="relative">
+                  <select
+                    className="w-full rounded-xl border border-outline-variant/50 bg-surface focus:border-primary focus:outline-none shadow-inner font-body-md text-body-md pl-4 pr-10 py-3 cursor-pointer appearance-none"
+                    id="video-status"
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        status: e.target.value as "publish" | "draft",
+                      })
+                    }
+                  >
+                    <option value="draft">Draft (Privat)</option>
+                    <option value="publish">Publish (Terlihat oleh Siswa)</option>
+                  </select>
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-xl pointer-events-none select-none">
+                    keyboard_arrow_down
+                  </span>
+                </div>
               </div>
             </div>
           </div>

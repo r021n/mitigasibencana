@@ -24,7 +24,7 @@ export default function HomePage() {
               Dashboard
             </Link>
             <Link
-              to="#"
+              to="/videos"
               className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg"
             >
               Kumpulan Video
@@ -64,10 +64,10 @@ export default function HomePage() {
             </p>
             <div className="pt-base flex flex-row gap-base justify-start">
               <button className="font-label-md text-label-md bg-primary text-on-primary rounded-full px-8 py-4 shadow-[0_8px_20px_rgba(0,74,198,0.3),inset_2px_2px_4px_rgba(255,255,255,0.4)] active:scale-95 active:translate-y-1 active:shadow-none transition-all duration-200">
-                Mulai Belajar
+                Tonton Video
               </button>
               <button className="font-label-md text-label-md bg-surface-container-highest text-on-surface rounded-full px-8 py-4 shadow-[0_4px_12px_rgba(11,28,48,0.05),inset_2px_2px_4px_rgba(255,255,255,0.8)] active:scale-95 active:translate-y-1 active:shadow-none transition-all duration-200">
-                Gabung Komunitas
+                Upload Video
               </button>
             </div>
           </div>

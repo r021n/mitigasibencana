@@ -46,6 +46,16 @@ export const authApi = {
 };
 
 export const videoApi = {
+  getPublicVideos: async (page: number = 1, q: string = "", category: string = "") => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      q,
+      category,
+    });
+    return fetchWithAuth(`/videos/public?${params.toString()}`, {
+      method: "GET",
+    });
+  },
   getAll: async (search?: string) => {
     const endpoint = search ? `/videos?q=${encodeURIComponent(search)}` : "/videos";
     return fetchWithAuth(endpoint, {

@@ -7,6 +7,70 @@ import { videos, userVideos } from "../db/schema";
 const videosRoute = new Hono<{ Variables: { userId: string } }>();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 
+const ALLOWED_CATEGORIES = [
+  "tanah longsor",
+  "angin puting beliung",
+  "gempa bumi",
+  "banjir",
+  "tsunami",
+  "letusan gunung berapi",
+] as const;
+
+type Category = typeof ALLOWED_CATEGORIES[number];
+
+// GET public videos (published only)
+videosRoute.get("/public", async (c) => {
+  try {
+    const q = c.req.query("q")?.trim() || "";
+    const categoryRaw = c.req.query("category")?.trim() || "";
+    const page = parseInt(c.req.query("page") || "1");
+    const limit = 15;
+    const offset = (page - 1) * limit;
+
+    let conditions = [eq(videos.status, "publish")];
+   if (q) {
+      conditions.push(like(videos.title, `%${q}%`));
+    }
+    if (categoryRaw && (ALLOWED_CATEGORIES as readonly string[]).includes(categoryRaw)) {
+      const category = categoryRaw as Category;
+      conditions.push(eq(videos.category, category));
+    }
+
+    const whereClause = and(...conditions);
+
+    const result = await db
+      .select({
+        id: videos.id,
+        title: videos.title,
+        description: videos.description,
+        youtubeLink: videos.youtubeLink,
+        category: videos.category,
+      })
+      .from(videos)
+      .where(whereClause)
+      .limit(limit)
+      .offset(offset);
+
+    // Get total count for pagination
+    const allMatching = await db.select({ id: videos.id }).from(videos).where(whereClause);
+    const totalVideos = allMatching.length;
+    const totalPages = Math.ceil(totalVideos / limit);
+
+    return c.json({
+      data: result,
+      pagination: {
+        total: totalVideos,
+        page,
+        limit,
+        totalPages
+      }
+    });
+  } catch (error) {
+    console.error("Get Public Videos Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
 // Middleware to authenticate JWT
 videosRoute.use("*", async (c, next) => {
   try {
