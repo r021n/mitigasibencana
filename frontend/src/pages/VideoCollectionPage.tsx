@@ -134,7 +134,7 @@ export default function VideoCollectionPage() {
                 />
               </form>
 
-              <div className="relative min-w-max">
+              <div className="relative min-w-max opacity-70 hover:opacity-100 focus-within:opacity-100 transition-all duration-200">
                 <select
                   value={category}
                   onChange={handleCategoryChange}

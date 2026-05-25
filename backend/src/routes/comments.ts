@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { verify } from "hono/jwt";
-import { eq, inArray, desc } from "drizzle-orm";
+import { eq, inArray, asc } from "drizzle-orm";
 import { db } from "../db";
 import { comments, commentReplies, users, videos } from "../db/schema";
 
@@ -42,13 +42,13 @@ commentsRoute.get("/:videoId", async (c) => {
       .from(comments)
       .leftJoin(users, eq(comments.userId, users.id))
       .where(eq(comments.videoId, videoId))
-      .orderBy(desc(comments.createdAt));
+      .orderBy(asc(comments.createdAt));
 
     if (commentsList.length === 0) {
       return c.json([]);
     }
 
-    const commentIds = commentsList.map(c => c.id);
+    const commentIds = commentsList.map((c: { id: string }) => c.id);
 
     // Fetch replies for these comments
     const repliesList = await db
@@ -66,19 +66,19 @@ commentsRoute.get("/:videoId", async (c) => {
       .from(commentReplies)
       .leftJoin(users, eq(commentReplies.userId, users.id))
       .where(inArray(commentReplies.commentId, commentIds))
-      .orderBy(desc(commentReplies.createdAt));
+      .orderBy(asc(commentReplies.createdAt));
 
     // Combine
-    const formattedComments = commentsList.map((comment) => {
+    const formattedComments = commentsList.map((comment: any) => {
       return {
         ...comment,
         authorName: comment.user?.name || comment.guestName || "Anonymous",
         replies: repliesList
-          .filter((r) => r.commentId === comment.id)
-          .map((reply) => ({
+          .filter((r: any) => r.commentId === comment.id)
+          .map((reply: any) => ({
             ...reply,
             authorName: reply.user?.name || reply.guestName || "Anonymous",
-          })).reverse(), // reverse to show oldest first, or keep desc? Usually oldest replies first.
+          })),
       };
     });
 

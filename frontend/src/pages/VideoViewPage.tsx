@@ -9,6 +9,7 @@ interface Video {
   description: string;
   youtubeLink: string;
   category: string;
+  ownerName?: string;
 }
 
 interface CommentReply {
@@ -28,7 +29,8 @@ interface Comment {
 }
 
 function getYoutubeId(url: string) {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp =
+    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
 }
@@ -36,11 +38,11 @@ function getYoutubeId(url: string) {
 export default function VideoViewPage() {
   const { id } = useParams<{ id: string }>();
   const user = useAuthStore((state) => state.user);
-  
+
   const [video, setVideo] = useState<Video | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Comment Form state
   const [commentContent, setCommentContent] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -177,7 +179,9 @@ export default function VideoViewPage() {
           </nav>
           {user ? (
             <div className="flex items-center gap-2">
-              <span className="font-label-md text-on-surface">Halo, {user.name}</span>
+              <span className="font-label-md text-on-surface">
+                Halo, {user.name}
+              </span>
             </div>
           ) : (
             <Link
@@ -193,7 +197,6 @@ export default function VideoViewPage() {
       {/* Main Content - 2 Columns */}
       <main className="pt-16 lg:h-screen lg:overflow-hidden bg-surface flex flex-col">
         <div className="max-w-container-max w-full mx-auto flex flex-col lg:flex-row gap-8 items-stretch flex-grow lg:overflow-hidden px-margin-desktop py-6">
-          
           {/* Left Column (Video & Details) - Static on Desktop */}
           <div className="w-full lg:w-2/3 flex flex-col gap-4 self-start">
             <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-md">
@@ -215,9 +218,24 @@ export default function VideoViewPage() {
               <h1 className="font-display-sm text-display-sm font-bold text-on-surface mb-2">
                 {video.title}
               </h1>
-              <span className="inline-block bg-primary/10 text-primary text-sm font-bold px-3 py-1 rounded-full mb-4">
-                {video.category}
-              </span>
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                {video.ownerName && (
+                  <span className="text-sm text-on-surface-variant flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">
+                      person
+                    </span>
+                    <span>
+                      Oleh:{" "}
+                      <strong className="text-on-surface font-semibold">
+                        {video.ownerName}
+                      </strong>
+                    </span>
+                  </span>
+                )}
+                <span className="inline-block bg-primary/10 text-primary text-sm font-bold px-3 py-1 rounded-full">
+                  {video.category}
+                </span>
+              </div>
               <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/30">
                 <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">
                   {video.description}
@@ -226,43 +244,17 @@ export default function VideoViewPage() {
             </div>
           </div>
 
-          {/* Right Column (Comments) - Scrollable on Desktop */}
-          <div className="w-full lg:w-1/3 flex flex-col gap-6 lg:h-full lg:overflow-y-auto pr-2 pb-6">
-            <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
-              Komentar ({comments.length})
-            </h2>
+          {/* Right Column (Comments) - Fixed Form at Bottom, Scrollable List */}
+          <div className="w-full lg:w-1/3 flex flex-col h-[550px] lg:h-full bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden shadow-sm">
+            {/* Header */}
+            <div className="p-4 border-b border-outline-variant/20 bg-surface-container-low/50">
+              <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
+                Komentar ({comments.length})
+              </h2>
+            </div>
 
-            {/* Comment Form */}
-            <form onSubmit={handleCommentSubmit} className="flex flex-col gap-3 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/50 shadow-sm">
-              {!user && (
-                <input
-                  type="text"
-                  placeholder="Nama Anda"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  required
-                  className="px-4 py-2 bg-surface text-on-surface rounded-lg border border-outline-variant/50 focus:border-primary focus:outline-none text-sm"
-                />
-              )}
-              <textarea
-                placeholder="Tulis komentar..."
-                value={commentContent}
-                onChange={(e) => setCommentContent(e.target.value)}
-                required
-                rows={3}
-                className="w-full px-4 py-2 bg-surface text-on-surface rounded-lg border border-outline-variant/50 focus:border-primary focus:outline-none text-sm resize-none"
-              ></textarea>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="self-end px-4 py-2 bg-primary text-on-primary font-label-md rounded-full hover:bg-primary/90 disabled:opacity-50 transition-colors"
-              >
-                {isSubmitting ? "Mengirim..." : "Kirim Komentar"}
-              </button>
-            </form>
-
-            {/* Comments List */}
-            <div className="flex flex-col gap-4 pb-8">
+            {/* Comments List - Scrollable */}
+            <div className="flex-grow overflow-y-auto hover-scrollbar p-4 flex flex-col gap-4">
               {comments.map((comment) => (
                 <div key={comment.id} className="flex flex-col gap-2">
                   <div className="flex items-start gap-3">
@@ -273,15 +265,26 @@ export default function VideoViewPage() {
                     </div>
                     <div className="flex flex-col w-full">
                       <div className="flex items-baseline gap-2">
-                        <span className="font-label-lg font-bold text-on-surface">{comment.authorName}</span>
+                        <span className="font-label-lg font-bold text-on-surface">
+                          {comment.authorName}
+                        </span>
                         <span className="text-xs text-on-surface-variant">
-                          {new Date(comment.createdAt).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(comment.createdAt).toLocaleDateString(
+                            "id-ID",
+                            { day: "numeric", month: "short", year: "numeric" },
+                          )}
                         </span>
                       </div>
-                      <p className="text-sm text-on-surface mt-1 whitespace-pre-wrap">{comment.content}</p>
-                      
-                      <button 
-                        onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                      <p className="text-sm text-on-surface mt-1 whitespace-pre-wrap">
+                        {comment.content}
+                      </p>
+
+                      <button
+                        onClick={() =>
+                          setReplyingTo(
+                            replyingTo === comment.id ? null : comment.id,
+                          )
+                        }
                         className="text-xs text-primary font-semibold mt-2 self-start hover:underline"
                       >
                         Balas
@@ -289,13 +292,18 @@ export default function VideoViewPage() {
 
                       {/* Reply Form */}
                       {replyingTo === comment.id && (
-                        <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-3 flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50">
+                        <form
+                          onSubmit={(e) => handleReplySubmit(e, comment.id)}
+                          className="mt-3 flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50"
+                        >
                           {!user && (
                             <input
                               type="text"
                               placeholder="Nama Anda"
                               value={replyGuestName}
-                              onChange={(e) => setReplyGuestName(e.target.value)}
+                              onChange={(e) =>
+                                setReplyGuestName(e.target.value)
+                              }
                               required
                               className="px-3 py-1.5 bg-surface text-on-surface rounded-md border border-outline-variant/50 focus:border-primary focus:outline-none text-xs"
                             />
@@ -330,8 +338,11 @@ export default function VideoViewPage() {
                       {/* Replies List */}
                       {comment.replies && comment.replies.length > 0 && (
                         <div className="flex flex-col gap-3 mt-3 ml-4 pl-4 border-l-2 border-outline-variant/30">
-                          {comment.replies.map(reply => (
-                            <div key={reply.id} className="flex items-start gap-2">
+                          {comment.replies.map((reply) => (
+                            <div
+                              key={reply.id}
+                              className="flex items-start gap-2"
+                            >
                               <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
                                 <span className="text-secondary font-bold text-xs">
                                   {reply.authorName.charAt(0).toUpperCase()}
@@ -339,12 +350,22 @@ export default function VideoViewPage() {
                               </div>
                               <div className="flex flex-col">
                                 <div className="flex items-baseline gap-2">
-                                  <span className="font-label-md font-bold text-on-surface text-sm">{reply.authorName}</span>
+                                  <span className="font-label-md font-bold text-on-surface text-sm">
+                                    {reply.authorName}
+                                  </span>
                                   <span className="text-[10px] text-on-surface-variant">
-                                    {new Date(reply.createdAt).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    {new Date(
+                                      reply.createdAt,
+                                    ).toLocaleDateString("id-ID", {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
                                   </span>
                                 </div>
-                                <p className="text-xs text-on-surface mt-0.5 whitespace-pre-wrap">{reply.content}</p>
+                                <p className="text-xs text-on-surface mt-0.5 whitespace-pre-wrap">
+                                  {reply.content}
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -354,16 +375,50 @@ export default function VideoViewPage() {
                   </div>
                 </div>
               ))}
-              
+
               {comments.length === 0 && (
                 <div className="text-center py-8 text-on-surface-variant">
-                  <span className="material-symbols-outlined text-4xl mb-2 opacity-50">forum</span>
-                  <p className="text-sm">Belum ada komentar. Jadilah yang pertama!</p>
+                  <span className="material-symbols-outlined text-4xl mb-2 opacity-50">
+                    forum
+                  </span>
+                  <p className="text-sm">
+                    Belum ada komentar. Jadilah yang pertama!
+                  </p>
                 </div>
               )}
             </div>
-          </div>
 
+            {/* Comment Form - Sticky at Bottom */}
+            <div className="p-4 border-t border-outline-variant/20 bg-surface-container-low/50 shrink-0">
+              <form onSubmit={handleCommentSubmit} className="flex flex-col gap-3">
+                {!user && (
+                  <input
+                    type="text"
+                    placeholder="Nama Anda"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    required
+                    className="px-4 py-2 bg-surface text-on-surface rounded-lg border border-outline-variant/50 focus:border-primary focus:outline-none text-sm"
+                  />
+                )}
+                <textarea
+                  placeholder="Tulis komentar..."
+                  value={commentContent}
+                  onChange={(e) => setCommentContent(e.target.value)}
+                  required
+                  rows={2}
+                  className="w-full px-4 py-2 bg-surface text-on-surface rounded-lg border border-outline-variant/50 focus:border-primary focus:outline-none text-sm resize-none"
+                ></textarea>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="self-end font-label-md text-label-md bg-primary text-on-primary rounded-full px-6 py-2 shadow-[0_6px_16px_rgba(0,74,198,0.25),inset_2px_2px_4px_rgba(255,255,255,0.3)] active:scale-95 active:translate-y-0.5 active:shadow-none font-semibold text-center disabled:opacity-50 disabled:scale-100 disabled:translate-y-0 disabled:shadow-none transition-all"
+                >
+                  {isSubmitting ? "Mengirim..." : "Kirim Komentar"}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </main>
     </>

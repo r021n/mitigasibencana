@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { verify } from "hono/jwt";
 import { eq, and, like } from "drizzle-orm";
 import { db } from "../db";
-import { videos, userVideos } from "../db/schema";
+import { videos, userVideos, users } from "../db/schema";
 
 const videosRoute = new Hono<{ Variables: { userId: string } }>();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
@@ -82,8 +82,11 @@ videosRoute.get("/public/:id", async (c) => {
         description: videos.description,
         youtubeLink: videos.youtubeLink,
         category: videos.category,
+        ownerName: users.name,
       })
       .from(videos)
+      .leftJoin(userVideos, eq(videos.id, userVideos.videoId))
+      .leftJoin(users, eq(userVideos.userId, users.id))
       .where(and(eq(videos.id, id), eq(videos.status, "publish")));
 
     if (result.length === 0) {
