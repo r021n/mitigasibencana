@@ -119,10 +119,10 @@ npx drizzle-kit push
 ```
 
 ### D. Menjalankan Backend dengan PM2
-Kita akan menggunakan file `ecosystem.config.js` yang sudah Anda miliki untuk menjalankan backend.
+Kita akan menggunakan file `ecosystem.config.cjs` yang sudah Anda miliki untuk menjalankan backend.
 > [!IMPORTANT]
 > **Penting Mengenai File Log PM2:**
-> File `ecosystem.config.js` Anda saat ini mengarah ke `/var/log/pm2/...` untuk output & error log. Agar tidak terkena masalah hak akses write (Permission Denied) ketika dijalankan oleh non-root user, sangat disarankan untuk membuat folder `/var/log/pm2` terlebih dahulu dan memberikan hak akses ke user Anda, **atau** menghapus baris `out_file` & `error_file` pada `ecosystem.config.js` agar PM2 otomatis menyimpannya di folder default PM2 (`~/.pm2/logs/`).
+> File `ecosystem.config.cjs` Anda saat ini mengarah ke `/var/log/pm2/...` untuk output & error log. Agar tidak terkena masalah hak akses write (Permission Denied) ketika dijalankan oleh non-root user, sangat disarankan untuk membuat folder `/var/log/pm2` terlebih dahulu dan memberikan hak akses ke user Anda, **atau** menghapus baris `out_file` & `error_file` pada `ecosystem.config.cjs` agar PM2 otomatis menyimpannya di folder default PM2 (`~/.pm2/logs/`).
 >
 > Jika ingin membuat folder logs sistem:
 > ```bash
@@ -132,7 +132,7 @@ Kita akan menggunakan file `ecosystem.config.js` yang sudah Anda miliki untuk me
 
 Sekarang, jalankan aplikasi backend dengan PM2:
 ```bash
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 ```
 
 Untuk memastikan aplikasi berjalan dengan baik:
@@ -314,4 +314,4 @@ sudo certbot renew --dry-run
   pm2 restart mitigasibencana-backend
   ```
 * **Jika database SQLite Anda terkunci (*Database is locked*):**
-  Pastikan database tidak sedang diakses secara eksklusif oleh proses eksternal. PM2 dengan clustering terkadang memicu lock jika menggunakan database file mentah seperti SQLite, oleh karena itu kami menggunakan `instances: 1` di dalam `ecosystem.config.js`. Tetap gunakan 1 instance untuk runtime SQLite demi menghindari race conditions.
+  Pastikan database tidak sedang diakses secara eksklusif oleh proses eksternal. PM2 dengan clustering terkadang memicu lock jika menggunakan database file mentah seperti SQLite, oleh karena itu kami menggunakan `instances: 1` di dalam `ecosystem.config.cjs`. Tetap gunakan 1 instance untuk runtime SQLite demi menghindari race conditions.
