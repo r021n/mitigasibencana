@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { sign, verify } from "hono/jwt";
+import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
@@ -23,7 +24,7 @@ auth.post("/register", async (c) => {
     }
 
     // Hash password
-    const hashedPassword = await Bun.password.hash(password);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Insert user
     const newUserParams: any = {
@@ -75,7 +76,7 @@ auth.post("/login", async (c) => {
     const user = foundUsers[0];
 
     // Verify password
-    const isValid = await Bun.password.verify(password, user.password);
+    const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return c.json({ error: "Invalid email or password" }, 401);
     }
@@ -131,13 +132,13 @@ auth.post("/change-password", async (c) => {
     const user = foundUsers[0];
 
     // Verify old password
-    const isValid = await Bun.password.verify(oldPassword, user.password);
+    const isValid = await bcrypt.compare(oldPassword, user.password);
     if (!isValid) {
       return c.json({ error: "Kata sandi lama salah" }, 400); // Send Indonesian error matching UI if possible
     }
 
     // Hash new password
-    const hashedNewPassword = await Bun.password.hash(newPassword);
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password in DB
     await db.update(users).set({ password: hashedNewPassword }).where(eq(users.id, userId));

@@ -32,6 +32,22 @@ app.route('/comments', comments)
 
 const port = parseInt(process.env.PORT || '3000')
 
+// Jalankan server Hono jika berada di lingkungan Node.js
+if (typeof Bun === "undefined") {
+  import('@hono/node-server').then(({ serve }) => {
+    serve({
+      fetch: app.fetch,
+      port,
+    })
+    console.log(`[Node.js] Server is running on port ${port}`)
+  }).catch((err) => {
+    console.error("Failed to start Node.js server:", err)
+  })
+} else {
+  console.log(`[Bun] Server is running on port ${port}`)
+}
+
+// Ekspor default untuk Bun native serve format
 export default {
   port,
   fetch: app.fetch,

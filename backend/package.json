@@ -1,5 +1,6 @@
 {
   "name": "backend",
+  "type": "module",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "start": "bun run src/index.ts",
@@ -9,12 +10,17 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.4",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.10.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.21"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "latest",
-    "better-sqlite3": "^12.10.0",
-    "drizzle-kit": "^0.31.10"
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.22.3"
   }
 }

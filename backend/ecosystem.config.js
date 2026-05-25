@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: "mitigasibencana-backend",
-      script: "src/index.ts",
-      interpreter: "/root/.bun/bin/bun",
+      script: "node_modules/tsx/dist/cli.mjs",
+      args: "src/index.ts",
       cwd: "/var/www/mitigasibencana/backend",
       instances: 1,
       autorestart: true,
