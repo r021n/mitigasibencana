@@ -8,13 +8,24 @@ const app = new Hono()
 
 // CORS: di production, izinkan domain frontend saja
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ['http://localhost:5173']
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim().replace(/\/$/, '')) // Hapus trailing slash jika ada
+  : [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5174',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000'
+    ]
 
 app.use('*', cors({
   origin: (origin) => {
-    // Jika tidak ada origin (server-to-server) atau origin diizinkan
-    if (!origin || allowedOrigins.includes(origin)) return origin
+    if (!origin) return undefined
+    
+    // Hapus trailing slash dari origin request untuk pencocokan yang akurat
+    const cleanOrigin = origin.replace(/\/$/, '')
+    
+    if (allowedOrigins.includes(cleanOrigin)) return origin
     return allowedOrigins[0]
   },
   allowHeaders: ['Content-Type', 'Authorization'],
