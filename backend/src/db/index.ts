@@ -1,3 +1,4 @@
+import "../env";
 import * as schema from "./schema";
 import path from "path";
 import { fileURLToPath } from "url";
