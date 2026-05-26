@@ -5,16 +5,28 @@ export default function InclusionWidget() {
   const {
     fontSizeScale,
     lineHeightScale,
+    letterSpacing,
     buttonPosition,
     showReadingLine,
     showReadingMask,
     useLargeCursor,
+    fontBold,
+    readableFont,
+    ttsOnHover,
+    monochrome,
+    highlightInteractive,
     setFontSizeScale,
     setLineHeightScale,
+    setLetterSpacing,
     setButtonPosition,
     setShowReadingLine,
     setShowReadingMask,
     setUseLargeCursor,
+    setFontBold,
+    setReadableFont,
+    setTtsOnHover,
+    setMonochrome,
+    setHighlightInteractive,
     resetSettings,
   } = useAccessibilityStore();
 
@@ -35,9 +47,9 @@ export default function InclusionWidget() {
   // Lebar dan tinggi tombol melayang
   const BUTTON_SIZE = 64;
 
-  // Ukuran dropdown card (diperbesar secara signifikan sesuai permintaan agar lebih mudah dibaca)
+  // Ukuran dropdown card (disesuaikan tingginya agar muat 3 slider dan 8 tombol dalam 4 kolom)
   const CARD_WIDTH = 360;
-  const CARD_HEIGHT = 310;
+  const CARD_HEIGHT = 450;
 
   // Inisialisasi posisi tombol melayang di layar
   useEffect(() => {
@@ -179,8 +191,11 @@ export default function InclusionWidget() {
           left: `${position.x}px`,
           top: `${position.y}px`,
           touchAction: "none",
+          letterSpacing: "normal",
+          fontWeight: "normal",
+          fontFamily: "'Inter', sans-serif",
         }}
-        className={`fixed z-50 w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-primary-container text-on-primary flex items-center justify-center cursor-grab active:cursor-grabbing select-none shadow-[0_12px_24px_rgba(0,74,198,0.35),inset_2px_2px_4px_rgba(255,255,255,0.4)] hover:shadow-[0_16px_32px_rgba(0,74,198,0.45),inset_2px_2px_4px_rgba(255,255,255,0.5)] transition-shadow duration-200 focus:outline-none group`}
+        className="inclusion-widget-isolated fixed z-50 w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-primary-container text-on-primary flex items-center justify-center cursor-grab active:cursor-grabbing select-none shadow-[0_12px_24px_rgba(0,74,198,0.35),inset_2px_2px_4px_rgba(255,255,255,0.4)] hover:shadow-[0_16px_32px_rgba(0,74,198,0.45),inset_2px_2px_4px_rgba(255,255,255,0.5)] transition-shadow duration-200 focus:outline-none group"
         title="Fitur Aksesibilitas"
       >
         <span
@@ -223,12 +238,16 @@ export default function InclusionWidget() {
             // Isolasi CSS custom property skala di tingkat CSS
             "--accessibility-font-scale": "1",
             "--accessibility-line-height-scale": "1",
+            "--accessibility-letter-spacing": "0px",
             
             // Reset dasar font-size dan line-height dalam PIXEL mutlak agar tidak terpengaruh rem atau warisan line-height global
             fontSize: "16px",
             lineHeight: "24px",
+            letterSpacing: "normal",
+            fontWeight: "normal",
+            fontFamily: "'Inter', sans-serif",
           } as React.CSSProperties}
-          className="clay-card backdrop-blur-md shadow-2xl fixed z-50 animate-in fade-in zoom-in-95 duration-200"
+          className="inclusion-widget-isolated clay-card backdrop-blur-md shadow-2xl fixed z-50 animate-in fade-in zoom-in-95 duration-200"
         >
           {/* Header */}
           <div 
@@ -288,10 +307,10 @@ export default function InclusionWidget() {
           </div>
 
           {/* Kontrol Slider */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "18px", boxSizing: "border-box" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", boxSizing: "border-box" }}>
             
             {/* Slider 1: Ukuran Teks */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", boxSizing: "border-box" }}>
               <div 
                 style={{ 
                   display: "flex", 
@@ -301,7 +320,7 @@ export default function InclusionWidget() {
                   color: "#434655", 
                   userSelect: "none", 
                   fontSize: "14px",
-                  lineHeight: "20px", // Kunci tinggi baris absolut
+                  lineHeight: "20px",
                 }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", lineHeight: "20px" }}>
@@ -324,7 +343,7 @@ export default function InclusionWidget() {
                   cursor: "pointer",
                   accentColor: "#004ac6",
                   outline: "none",
-                  backgroundColor: "#e5eeff", 
+                  backgroundColor: "#e5eeff",
                   margin: "0px",
                   padding: "0px",
                 }}
@@ -332,7 +351,7 @@ export default function InclusionWidget() {
             </div>
 
             {/* Slider 2: Jarak Baris */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", boxSizing: "border-box" }}>
               <div 
                 style={{ 
                   display: "flex", 
@@ -342,7 +361,7 @@ export default function InclusionWidget() {
                   color: "#434655", 
                   userSelect: "none", 
                   fontSize: "14px",
-                  lineHeight: "20px", // Kunci tinggi baris absolut
+                  lineHeight: "20px",
                 }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", lineHeight: "20px" }}>
@@ -372,16 +391,57 @@ export default function InclusionWidget() {
               />
             </div>
 
+            {/* Slider 3: Jarak Huruf */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", boxSizing: "border-box" }}>
+              <div 
+                style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center", 
+                  fontWeight: "600", 
+                  color: "#434655", 
+                  userSelect: "none", 
+                  fontSize: "14px",
+                  lineHeight: "20px",
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", lineHeight: "20px" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "18px", lineHeight: "1" }}>space_bar</span>
+                  Jarak Huruf
+                </span>
+                <span style={{ color: "#b54e00", fontWeight: "700", fontSize: "14px", lineHeight: "20px" }}>{letterSpacing}px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="8"
+                step="0.5"
+                value={letterSpacing}
+                onChange={(e) => setLetterSpacing(parseFloat(e.target.value))}
+                style={{
+                  width: "100%",
+                  height: "6px",
+                  borderRadius: "9999px",
+                  cursor: "pointer",
+                  accentColor: "#b54e00",
+                  outline: "none",
+                  backgroundColor: "#e5eeff",
+                  margin: "0px",
+                  padding: "0px",
+                }}
+              />
+            </div>
+
           </div>
 
-          {/* Fitur Tambahan (Reading Line, Reading Mask, Large Cursor) */}
+          {/* Fitur Tambahan (Reading Line, Reading Mask, Large Cursor, Bold, Readable, TTS, Monochrome, Highlight Links) */}
           <div 
             style={{ 
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "10px",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: "8px",
               borderTop: "1px solid rgba(195, 198, 215, 0.4)",
-              paddingTop: "16px",
+              paddingTop: "14px",
               boxSizing: "border-box",
             }}
           >
@@ -389,14 +449,14 @@ export default function InclusionWidget() {
             <button
               onClick={() => setShowReadingLine(!showReadingLine)}
               style={{
-                padding: "10px 6px",
+                padding: "8px 2px",
                 borderRadius: "14px",
                 border: showReadingLine ? "1px solid #004ac6" : "1px solid rgba(195, 198, 215, 0.3)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "6px",
+                gap: "4px",
                 userSelect: "none",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
@@ -404,26 +464,24 @@ export default function InclusionWidget() {
                 color: showReadingLine ? "#004ac6" : "#434655",
                 fontWeight: showReadingLine ? "700" : "500",
                 boxSizing: "border-box",
-                fontSize: "12px",
-                lineHeight: "16px", // Kunci tinggi baris absolut
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: "20px", lineHeight: "1" }}>horizontal_rule</span>
-              <span style={{ fontSize: "12px", lineHeight: "16px", textAlign: "center" }}>Garis Baca</span>
+              <span style={{ fontSize: "10px", lineHeight: "13px", textAlign: "center" }}>Garis Baca</span>
             </button>
 
             {/* Toggle 2: Masker Baca */}
             <button
               onClick={() => setShowReadingMask(!showReadingMask)}
               style={{
-                padding: "10px 6px",
+                padding: "8px 2px",
                 borderRadius: "14px",
                 border: showReadingMask ? "1px solid #004ac6" : "1px solid rgba(195, 198, 215, 0.3)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "6px",
+                gap: "4px",
                 userSelect: "none",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
@@ -431,26 +489,24 @@ export default function InclusionWidget() {
                 color: showReadingMask ? "#004ac6" : "#434655",
                 fontWeight: showReadingMask ? "700" : "500",
                 boxSizing: "border-box",
-                fontSize: "12px",
-                lineHeight: "16px", // Kunci tinggi baris absolut
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: "20px", lineHeight: "1" }}>menu</span>
-              <span style={{ fontSize: "12px", lineHeight: "16px", textAlign: "center" }}>Masker Baca</span>
+              <span style={{ fontSize: "10px", lineHeight: "13px", textAlign: "center" }}>Masker Baca</span>
             </button>
 
             {/* Toggle 3: Kursor Besar */}
             <button
               onClick={() => setUseLargeCursor(!useLargeCursor)}
               style={{
-                padding: "10px 6px",
+                padding: "8px 2px",
                 borderRadius: "14px",
                 border: useLargeCursor ? "1px solid #004ac6" : "1px solid rgba(195, 198, 215, 0.3)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "6px",
+                gap: "4px",
                 userSelect: "none",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
@@ -458,12 +514,135 @@ export default function InclusionWidget() {
                 color: useLargeCursor ? "#004ac6" : "#434655",
                 fontWeight: useLargeCursor ? "700" : "500",
                 boxSizing: "border-box",
-                fontSize: "12px",
-                lineHeight: "16px", // Kunci tinggi baris absolut
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: "20px", lineHeight: "1" }}>near_me</span>
-              <span style={{ fontSize: "12px", lineHeight: "16px", textAlign: "center" }}>Kursor Besar</span>
+              <span style={{ fontSize: "10px", lineHeight: "13px", textAlign: "center" }}>Kursor Besar</span>
+            </button>
+
+            {/* Toggle 4: Teks Tebal */}
+            <button
+              onClick={() => setFontBold(!fontBold)}
+              style={{
+                padding: "8px 2px",
+                borderRadius: "14px",
+                border: fontBold ? "1px solid #004ac6" : "1px solid rgba(195, 198, 215, 0.3)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "4px",
+                userSelect: "none",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                backgroundColor: fontBold ? "rgba(0, 74, 198, 0.08)" : "#f8f9ff",
+                color: fontBold ? "#004ac6" : "#434655",
+                fontWeight: fontBold ? "700" : "500",
+                boxSizing: "border-box",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "20px", lineHeight: "1" }}>format_bold</span>
+              <span style={{ fontSize: "10px", lineHeight: "13px", textAlign: "center" }}>Teks Tebal</span>
+            </button>
+
+            {/* Toggle 5: Font Readable */}
+            <button
+              onClick={() => setReadableFont(!readableFont)}
+              style={{
+                padding: "8px 2px",
+                borderRadius: "14px",
+                border: readableFont ? "1px solid #004ac6" : "1px solid rgba(195, 198, 215, 0.3)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "4px",
+                userSelect: "none",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                backgroundColor: readableFont ? "rgba(0, 74, 198, 0.08)" : "#f8f9ff",
+                color: readableFont ? "#004ac6" : "#434655",
+                fontWeight: readableFont ? "700" : "500",
+                boxSizing: "border-box",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "20px", lineHeight: "1" }}>menu_book</span>
+              <span style={{ fontSize: "10px", lineHeight: "13px", textAlign: "center" }}>Readable</span>
+            </button>
+
+            {/* Toggle 6: Suara Hover */}
+            <button
+              onClick={() => setTtsOnHover(!ttsOnHover)}
+              style={{
+                padding: "8px 2px",
+                borderRadius: "14px",
+                border: ttsOnHover ? "1px solid #004ac6" : "1px solid rgba(195, 198, 215, 0.3)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "4px",
+                userSelect: "none",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                backgroundColor: ttsOnHover ? "rgba(0, 74, 198, 0.08)" : "#f8f9ff",
+                color: ttsOnHover ? "#004ac6" : "#434655",
+                fontWeight: ttsOnHover ? "700" : "500",
+                boxSizing: "border-box",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "20px", lineHeight: "1" }}>volume_up</span>
+              <span style={{ fontSize: "10px", lineHeight: "13px", textAlign: "center" }}>Suara Hover</span>
+            </button>
+
+            {/* Toggle 7: Mode Monokrom */}
+            <button
+              onClick={() => setMonochrome(!monochrome)}
+              style={{
+                padding: "8px 2px",
+                borderRadius: "14px",
+                border: monochrome ? "1px solid #004ac6" : "1px solid rgba(195, 198, 215, 0.3)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "4px",
+                userSelect: "none",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                backgroundColor: monochrome ? "rgba(0, 74, 198, 0.08)" : "#f8f9ff",
+                color: monochrome ? "#004ac6" : "#434655",
+                fontWeight: monochrome ? "700" : "500",
+                boxSizing: "border-box",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "20px", lineHeight: "1" }}>filter_b_and_w</span>
+              <span style={{ fontSize: "10px", lineHeight: "13px", textAlign: "center" }}>Monokrom</span>
+            </button>
+
+            {/* Toggle 8: Sorot Link */}
+            <button
+              onClick={() => setHighlightInteractive(!highlightInteractive)}
+              style={{
+                padding: "8px 2px",
+                borderRadius: "14px",
+                border: highlightInteractive ? "1px solid #004ac6" : "1px solid rgba(195, 198, 215, 0.3)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "4px",
+                userSelect: "none",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                backgroundColor: highlightInteractive ? "rgba(0, 74, 198, 0.08)" : "#f8f9ff",
+                color: highlightInteractive ? "#004ac6" : "#434655",
+                fontWeight: highlightInteractive ? "700" : "500",
+                boxSizing: "border-box",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "20px", lineHeight: "1" }}>link</span>
+              <span style={{ fontSize: "10px", lineHeight: "13px", textAlign: "center" }}>Sorot Link</span>
             </button>
           </div>
 
