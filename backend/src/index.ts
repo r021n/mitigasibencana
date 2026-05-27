@@ -4,6 +4,10 @@ import { cors } from 'hono/cors'
 import auth from './routes/auth'
 import videos from './routes/videos'
 import comments from './routes/comments'
+import analysis from './routes/analysis'
+import { WebSocketServer } from 'ws'
+import { initWebSocket } from './services/websocket'
+import { analysisQueue } from './services/analysisQueue'
 
 const app = new Hono()
 
@@ -41,22 +45,33 @@ app.get('/', (c) => {
 app.route('/auth', auth)
 app.route('/videos', videos)
 app.route('/comments', comments)
+app.route('/analysis', analysis)
 
 const port = parseInt(process.env.PORT || '3000')
 
 // Jalankan server Hono jika berada di lingkungan Node.js
 if (typeof Bun === "undefined") {
   import('@hono/node-server').then(({ serve }) => {
-    serve({
+    const server = serve({
       fetch: app.fetch,
       port,
     })
-    console.log(`[Node.js] Server is running on port ${port}`)
+    
+    // Inisialisasi dan ikat WebSocket server
+    const wss = new WebSocketServer({ server: server as any })
+    initWebSocket(wss)
+    
+    // Mulai loop antrean pemrosesan di latar belakang
+    analysisQueue.start()
+    
+    console.log(`[Node.js] Server is running on port ${port} with WebSockets`)
   }).catch((err) => {
     console.error("Failed to start Node.js server:", err)
   })
 } else {
   console.log(`[Bun] Server is running on port ${port}`)
+  // Jalankan antrean pemrosesan jika menggunakan Bun
+  analysisQueue.start()
 }
 
 // Ekspor default untuk Bun native serve format
@@ -64,3 +79,4 @@ export default {
   port,
   fetch: app.fetch,
 }
+

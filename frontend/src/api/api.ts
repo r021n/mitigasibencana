@@ -111,3 +111,39 @@ export const commentApi = {
     });
   },
 };
+
+export const youtubeAnalysisApi = {
+  getAll: async () => {
+    return fetchWithAuth("/analysis", {
+      method: "GET",
+    });
+  },
+  create: async (youtubeLink: string) => {
+    return fetchWithAuth("/analysis", {
+      method: "POST",
+      body: JSON.stringify({ youtubeLink }),
+    });
+  },
+  startAnalysis: async (id: string) => {
+    return fetchWithAuth(`/analysis/${id}/analyze`, {
+      method: "POST",
+    });
+  },
+  delete: async (id: string) => {
+    return fetchWithAuth(`/analysis/${id}`, {
+      method: "DELETE",
+    });
+  },
+  getChats: async (id: string) => {
+    return fetchWithAuth(`/analysis/${id}/chats`, {
+      method: "GET",
+    });
+  },
+  sendChatMessage: async (id: string, content: string) => {
+    return fetchWithAuth(`/analysis/${id}/chat`, {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    });
+  },
+};
+

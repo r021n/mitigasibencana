@@ -7,7 +7,10 @@ if (typeof Bun === "undefined") {
   try {
     const currentDir = import.meta.dirname || path.dirname(fileURLToPath(import.meta.url));
     // Resolve the .env path in the backend directory (one level up from src/)
-    const envPath = path.resolve(currentDir, "../.env");
+    let envPath = path.resolve(currentDir, "../.env");
+    if (!fs.existsSync(envPath)) {
+      envPath = path.resolve(currentDir, "../.env.example");
+    }
 
     if (fs.existsSync(envPath)) {
       const envContent = fs.readFileSync(envPath, "utf-8");

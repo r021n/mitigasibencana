@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import UserInfoPage from './pages/UserInfoPage';
 import VideoCollectionPage from './pages/VideoCollectionPage';
 import VideoViewPage from './pages/VideoViewPage';
+import VideoAnalysisPage from './pages/VideoAnalysisPage';
 import { useAuthStore } from './store/authStore';
 import { useAccessibilityStore } from './store/accessibilityStore';
 import InclusionWidget from './components/ui/InclusionWidget';
@@ -157,6 +158,7 @@ function App() {
           <Route path="/videos" element={<VideoCollectionPage />} />
           <Route path="/videos/:id" element={<VideoViewPage />} />
           <Route path="/settings" element={<UserInfoPage />} />
+          <Route path="/analysis" element={<VideoAnalysisPage />} />
         </Routes>
       </div>
       <InclusionWidget />

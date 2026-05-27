@@ -28,6 +28,7 @@ export default function Sidebar() {
   };
 
   const isDashboardActive = location.pathname === "/dashboard";
+  const isAnalysisActive = location.pathname === "/analysis";
   const isSettingsActive = location.pathname === "/settings";
 
   return (
@@ -79,6 +80,25 @@ export default function Sidebar() {
                       video_library
                     </span>
                     {open && <span>Kelola Video</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={isAnalysisActive}
+                    title={!open ? "Analisis Inklusi" : undefined}
+                    onClick={() => navigate("/analysis")}
+                  >
+                    <span
+                      className="material-symbols-outlined flex items-center justify-center"
+                      style={{
+                        fontVariationSettings: `'FILL' ${
+                          isAnalysisActive ? 1 : 0
+                        }`,
+                      }}
+                    >
+                      interpreter_mode
+                    </span>
+                    {open && <span>Analisis Inklusi</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
