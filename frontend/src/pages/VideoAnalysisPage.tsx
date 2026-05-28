@@ -9,7 +9,7 @@ import Sidebar from "../components/layout/Sidebar";
 import AnalysisTable from "../components/layout/videoAnalysis/AnalysisTable";
 import AnalysisModal from "../components/layout/videoAnalysis/AnalysisModal";
 import ChatDrawer from "../components/layout/videoAnalysis/ChatDrawer";
-import { useAnalysisWebSocket } from "../components/layout/videoAnalysis/useAnalysisWebSocket";
+import { useAnalysisPolling } from "../components/layout/videoAnalysis/useAnalysisPolling";
 
 export interface YoutubeAnalysis {
   id: string;
@@ -70,8 +70,8 @@ function VideoAnalysisInner() {
   const [selectedAnalysisForModal, setSelectedAnalysisForModal] =
     useState<YoutubeAnalysis | null>(null);
 
-  // MENANGANI LOGIKA WEBSOCKET (Dipisahkan lewat custom hook)
-  useAnalysisWebSocket(user, setAnalyses);
+  // Menggunakan polling dinamis sebagai pengganti WebSocket demi keandalan di VPS
+  useAnalysisPolling(user, analyses, setAnalyses);
 
   // Initial fetch
   const fetchAnalyses = async () => {
