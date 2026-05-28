@@ -182,10 +182,11 @@ export const analysisQueue = {
         })
         .where(eq(videos.id, jobId));
 
-      // Mengunduh format terendah (biasanya 144p atau 240p) yang memiliki video mp4
+      // Mengunduh format pre-merged terendah (seperti format 18 atau mp4 yang sudah menyatu video+audio)
+      // untuk menghindari proses merging via ffmpeg yang memicu error file locking di Windows.
       try {
         await execPromise(
-          `yt-dlp -f "worst[ext=mp4]/worst" --no-playlist -o "${tempVideoPath}" "${youtubeLink}"`
+          `yt-dlp -f "18/worst[ext=mp4][vcodec!=none][acodec!=none]/worst[vcodec!=none][acodec!=none]/worst" --no-playlist -o "${tempVideoPath}" "${youtubeLink}"`
         );
       } catch (downloadErr: any) {
         throw new Error(`Gagal mengunduh video dari YouTube. Detail: ${downloadErr.message}`);

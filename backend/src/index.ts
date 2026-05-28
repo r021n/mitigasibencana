@@ -8,6 +8,7 @@ import analysis from './routes/analysis'
 import { WebSocketServer } from 'ws'
 import { initWebSocket } from './services/websocket'
 import { analysisQueue } from './services/analysisQueue'
+import { serve } from '@hono/node-server'
 
 const app = new Hono()
 
@@ -49,34 +50,18 @@ app.route('/analysis', analysis)
 
 const port = parseInt(process.env.PORT || '3000')
 
-// Jalankan server Hono jika berada di lingkungan Node.js
-if (typeof Bun === "undefined") {
-  import('@hono/node-server').then(({ serve }) => {
-    const server = serve({
-      fetch: app.fetch,
-      port,
-    })
-    
-    // Inisialisasi dan ikat WebSocket server
-    const wss = new WebSocketServer({ server: server as any })
-    initWebSocket(wss)
-    
-    // Mulai loop antrean pemrosesan di latar belakang
-    analysisQueue.start()
-    
-    console.log(`[Node.js] Server is running on port ${port} with WebSockets`)
-  }).catch((err) => {
-    console.error("Failed to start Node.js server:", err)
-  })
-} else {
-  console.log(`[Bun] Server is running on port ${port}`)
-  // Jalankan antrean pemrosesan jika menggunakan Bun
-  analysisQueue.start()
-}
-
-// Ekspor default untuk Bun native serve format
-export default {
-  port,
+// Jalankan HTTP Server dengan @hono/node-server
+const server = serve({
   fetch: app.fetch,
-}
+  port,
+})
+
+// Inisialisasi dan ikat WebSocket server
+const wss = new WebSocketServer({ server: server as any })
+initWebSocket(wss)
+
+// Mulai loop antrean pemrosesan di latar belakang
+analysisQueue.start()
+
+console.log(`Server is running on port ${port} with WebSockets enabled`)
 
