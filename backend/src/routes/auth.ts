@@ -99,6 +99,39 @@ auth.post("/login", async (c) => {
     return c.json({ error: "Internal server error" }, 500);
   }
 });
+auth.get("/me", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    const token = authHeader.split(" ")[1];
+    
+    // Verify token
+    let payload;
+    try {
+      payload = await verify(token, JWT_SECRET, {alg: 'HS256'});
+    } catch (e) {
+      return c.json({ error: "Invalid token" }, 401);
+    }
+
+    const userId = payload.sub as string;
+
+    // Find user
+    const foundUsers = await db.select().from(users).where(eq(users.id, userId));
+    if (foundUsers.length === 0) {
+      return c.json({ error: "User not found" }, 401);
+    }
+
+    const user = foundUsers[0];
+    const { password: _, ...userWithoutPassword } = user;
+
+    return c.json({ user: userWithoutPassword }, 200);
+  } catch (error) {
+    console.error("Get Profile Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
 
 auth.post("/change-password", async (c) => {
   try {

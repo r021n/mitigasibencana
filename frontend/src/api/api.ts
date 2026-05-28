@@ -19,6 +19,13 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const data = await response.json();
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user_info");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth-unauthorized"));
+      }
+    }
     throw new Error(data.error || "An error occurred");
   }
 
@@ -42,6 +49,11 @@ export const authApi = {
     return fetchWithAuth("/auth/change-password", {
       method: "POST",
       body: JSON.stringify(passwordData),
+    });
+  },
+  getProfile: async () => {
+    return fetchWithAuth("/auth/me", {
+      method: "GET",
     });
   },
 };

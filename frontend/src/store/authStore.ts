@@ -19,7 +19,7 @@ interface AuthState {
   register: (userData: any) => Promise<void>;
   logout: () => void;
   clearMessages: () => void;
-  initialize: () => void;
+  initialize: () => Promise<void>;
 }
 
 const getInitialState = () => {
@@ -53,17 +53,30 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   clearMessages: () => set({ error: null, success: null }),
 
-  initialize: () => {
+  initialize: async () => {
     const token = localStorage.getItem("auth_token");
     const userInfo = localStorage.getItem("user_info");
     if (token && userInfo) {
       try {
         const user = JSON.parse(userInfo);
         set({ token, user, status: user.status });
+
+        // Verifikasi token dengan backend
+        try {
+          const data = await authApi.getProfile();
+          localStorage.setItem("user_info", JSON.stringify(data.user));
+          set({ user: data.user, status: data.user.status });
+        } catch (err: any) {
+          // Jika token tidak valid / user dihapus di database (401), logout
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("user_info");
+          set({ user: null, token: null, status: null });
+        }
       } catch (e) {
         // Clear corrupt storage
         localStorage.removeItem("auth_token");
         localStorage.removeItem("user_info");
+        set({ user: null, token: null, status: null });
       }
     }
   },
@@ -118,3 +131,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, token: null, status: null, error: null, success: null });
   },
 }));
+
+if (typeof window !== "undefined") {
+  window.addEventListener("auth-unauthorized", () => {
+    useAuthStore.getState().logout();
+  });
+}
