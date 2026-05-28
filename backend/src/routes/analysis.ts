@@ -4,7 +4,7 @@ import { verify } from "hono/jwt";
 import { eq, and, asc } from "drizzle-orm";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { db } from "../db";
-import { youtubeAnalyses, youtubeAnalysisChats } from "../db/schema";
+import { videos, youtubeAnalysisChats, userVideos } from "../db/schema";
 import { analysisQueue } from "../services/analysisQueue";
 
 const analysisRoute = new Hono<{ Variables: { userId: string } }>();
@@ -26,142 +26,119 @@ analysisRoute.use("*", async (c, next) => {
   }
 });
 
-// GET all analyses for the current authenticated user (Private visibility)
+// GET all video analyses for the current authenticated user
 analysisRoute.get("/", async (c) => {
   try {
     const userId = c.get("userId");
     const list = await db
-      .select()
-      .from(youtubeAnalyses)
-      .where(eq(youtubeAnalyses.userId, userId))
-      .orderBy(asc(youtubeAnalyses.createdAt));
+      .select({
+        id: videos.id,
+        youtubeLink: videos.youtubeLink,
+        title: videos.title,
+        status: videos.analysisStatus,
+        progress: videos.progress,
+        progressMessage: videos.progressMessage,
+        summary: videos.summary,
+        improvementSuggestions: videos.improvementSuggestions,
+        errorMessage: videos.errorMessage,
+        createdAt: videos.analysisCreatedAt,
+        updatedAt: videos.analysisUpdatedAt,
+      })
+      .from(videos)
+      .innerJoin(userVideos, eq(videos.id, userVideos.videoId))
+      .where(eq(userVideos.userId, userId))
+      .orderBy(asc(videos.analysisCreatedAt));
 
-    return c.json(list);
+    // For any videos that haven't been analyzed or have null createdAt, default it safely
+    const formattedList = list.map((item: any) => ({
+      ...item,
+      status: item.status || null, // Keep it null so it won't default to pending!
+      createdAt: item.createdAt || Date.now(),
+      updatedAt: item.updatedAt || Date.now(),
+    }));
+
+    return c.json(formattedList);
   } catch (error) {
     console.error("Get Analyses Error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
 
-// POST create new youtube analysis job
-analysisRoute.post("/", async (c) => {
-  try {
-    const userId = c.get("userId");
-    const body = await c.req.json();
-    const { youtubeLink } = body;
-
-    if (!youtubeLink) {
-      return c.json({ error: "Tautan YouTube wajib diisi" }, 400);
-    }
-
-    // Insert new pending job
-    const newAnalysis = await db
-      .insert(youtubeAnalyses)
-      .values({
-        userId,
-        youtubeLink,
-        status: "pending",
-        progress: 0,
-        progressMessage: "Dalam antrean...",
-      })
-      .returning();
-
-    // Trigger background queue worker
-    analysisQueue.notify();
-
-    return c.json(newAnalysis[0], 201);
-  } catch (error) {
-    console.error("Create Analysis Error:", error);
-    return c.json({ error: "Internal server error" }, 500);
-  }
-});
-
-// POST start/restart analysis for a specific record
+// POST start/restart analysis for a specific video
 analysisRoute.post("/:id/analyze", async (c) => {
   try {
     const userId = c.get("userId");
     const id = c.req.param("id");
 
-    // Verify record ownership
-    const found = await db
+    // Verify record ownership via userVideos table
+    const ownership = await db
       .select()
-      .from(youtubeAnalyses)
-      .where(and(eq(youtubeAnalyses.id, id), eq(youtubeAnalyses.userId, userId)));
+      .from(userVideos)
+      .where(and(eq(userVideos.userId, userId), eq(userVideos.videoId, id)));
 
-    if (found.length === 0) {
+    if (ownership.length === 0) {
       return c.json({ error: "Analisis tidak ditemukan" }, 404);
     }
 
-    // Reset status to pending
+    // Reset status to pending in videos table
     const updated = await db
-      .update(youtubeAnalyses)
+      .update(videos)
       .set({
-        status: "pending",
+        analysisStatus: "pending",
         progress: 0,
         progressMessage: "Dalam antrean...",
         errorMessage: null,
-        updatedAt: Date.now(),
+        analysisCreatedAt: Date.now(),
+        analysisUpdatedAt: Date.now(),
       })
-      .where(eq(youtubeAnalyses.id, id))
+      .where(eq(videos.id, id))
       .returning();
 
-    // Trigger queue
+    const video = updated[0];
+    const mapped = {
+      id: video.id,
+      youtubeLink: video.youtubeLink,
+      title: video.title,
+      status: video.analysisStatus,
+      progress: video.progress,
+      progressMessage: video.progressMessage,
+      summary: video.summary,
+      improvementSuggestions: video.improvementSuggestions,
+      errorMessage: video.errorMessage,
+      createdAt: video.analysisCreatedAt,
+      updatedAt: video.analysisUpdatedAt,
+    };
+
+    // Trigger background queue worker
     analysisQueue.notify();
 
-    return c.json(updated[0]);
+    return c.json(mapped);
   } catch (error) {
     console.error("Analyze Trigger Error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
 
-// DELETE video analysis entry
-analysisRoute.delete("/:id", async (c) => {
-  try {
-    const userId = c.get("userId");
-    const id = c.req.param("id");
-
-    // Verify record ownership
-    const found = await db
-      .select()
-      .from(youtubeAnalyses)
-      .where(and(eq(youtubeAnalyses.id, id), eq(youtubeAnalyses.userId, userId)));
-
-    if (found.length === 0) {
-      return c.json({ error: "Analisis tidak ditemukan" }, 404);
-    }
-
-    await db
-      .delete(youtubeAnalyses)
-      .where(eq(youtubeAnalyses.id, id));
-
-    return c.json({ success: true, message: "Catatan analisis berhasil dihapus" });
-  } catch (error) {
-    console.error("Delete Analysis Error:", error);
-    return c.json({ error: "Internal server error" }, 500);
-  }
-});
-
-// GET chats for a specific analysis
+// GET chats for a specific video
 analysisRoute.get("/:id/chats", async (c) => {
   try {
     const userId = c.get("userId");
     const id = c.req.param("id");
 
     // Verify record ownership
-    const found = await db
+    const ownership = await db
       .select()
-      .from(youtubeAnalyses)
-      .where(and(eq(youtubeAnalyses.id, id), eq(youtubeAnalyses.userId, userId)));
+      .from(userVideos)
+      .where(and(eq(userVideos.userId, userId), eq(userVideos.videoId, id)));
 
-    if (found.length === 0) {
+    if (ownership.length === 0) {
       return c.json({ error: "Analisis tidak ditemukan" }, 404);
     }
 
     const chatList = await db
       .select()
       .from(youtubeAnalysisChats)
-      .where(eq(youtubeAnalysisChats.analysisId, id))
+      .where(eq(youtubeAnalysisChats.videoId, id))
       .orderBy(asc(youtubeAnalysisChats.createdAt));
 
     return c.json(chatList);
@@ -183,18 +160,26 @@ analysisRoute.post("/:id/chat", async (c) => {
       return c.json({ error: "Pesan wajib diisi" }, 400);
     }
 
-    // Verify record ownership & get analysis summary
+    // Verify record ownership & get analysis summary from videos table
     const found = await db
-      .select()
-      .from(youtubeAnalyses)
-      .where(and(eq(youtubeAnalyses.id, id), eq(youtubeAnalyses.userId, userId)));
+      .select({
+        id: videos.id,
+        title: videos.title,
+        youtubeLink: videos.youtubeLink,
+        analysisStatus: videos.analysisStatus,
+        summary: videos.summary,
+        improvementSuggestions: videos.improvementSuggestions,
+      })
+      .from(videos)
+      .innerJoin(userVideos, eq(videos.id, userVideos.videoId))
+      .where(and(eq(videos.id, id), eq(userVideos.userId, userId)));
 
     if (found.length === 0) {
       return c.json({ error: "Analisis tidak ditemukan" }, 404);
     }
 
     const analysisRecord = found[0];
-    if (analysisRecord.status !== "completed") {
+    if (analysisRecord.analysisStatus !== "completed") {
       return c.json({ error: "Analisis harus selesai sebelum memulai chat lanjutan" }, 400);
     }
 
@@ -202,14 +187,14 @@ analysisRoute.post("/:id/chat", async (c) => {
     const previousChats = await db
       .select()
       .from(youtubeAnalysisChats)
-      .where(eq(youtubeAnalysisChats.analysisId, id))
+      .where(eq(youtubeAnalysisChats.videoId, id))
       .orderBy(asc(youtubeAnalysisChats.createdAt));
 
     // Save user message in DB
     const insertedUserMessage = await db
       .insert(youtubeAnalysisChats)
       .values({
-        analysisId: id,
+        videoId: id,
         role: "user",
         content,
       })
@@ -235,6 +220,9 @@ analysisRoute.post("/:id/chat", async (c) => {
       
       Tugas Anda adalah membalas chat dari calon guru (mahasiswa) dan memberikan panduan taktis, ramah, solutif, dan mudah diterapkan mengenai cara memperbaiki aspek inklusi video mereka (misalnya cara membuat subtitle di YouTube Studio, cara menyewa interpreter bahasa isyarat, merancang kontras warna yang ideal, mengatur kecepatan transisi visual, dll.).
       Tanggapi dalam bahasa Indonesia yang ramah, sopan, dan profesional. Jangan memberikan markdown heading tingkat 1 atau 2, gunakan cetak tebal (bold) atau poin-poin yang mudah dipahami.
+
+      PENTING:
+      Respon Anda HARUS sangat singkat, padat, langsung menjawab pertanyaan inti guru, dan mudah dimengerti. Batasi respon maksimal hanya 2 paragraf pendek atau 3-4 poin daftar ringkas. Hindari jawaban yang terlalu panjang atau bertele-tele.
     `;
 
     // Map history to Gemini API format
@@ -259,6 +247,7 @@ analysisRoute.post("/:id/chat", async (c) => {
       contents: contentsPayload,
       config: {
         systemInstruction: systemPrompt,
+        maxOutputTokens: 600, // Enforce a strict token limit to prevent lengthy responses
         thinkingConfig: {
           thinkingLevel: ThinkingLevel.MINIMAL,
         },
@@ -271,7 +260,7 @@ analysisRoute.post("/:id/chat", async (c) => {
     const insertedModelMessage = await db
       .insert(youtubeAnalysisChats)
       .values({
-        analysisId: id,
+        videoId: id,
         role: "model",
         content: aiText,
       })

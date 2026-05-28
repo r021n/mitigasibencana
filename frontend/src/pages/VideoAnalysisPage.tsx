@@ -55,11 +55,6 @@ function VideoAnalysisInner() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [youtubeLinkInput, setYoutubeLinkInput] = useState("");
-  const [isSubmittingLink, setIsSubmittingLink] = useState(false);
-
   // Chat Drawer State
   const [activeChatAnalysisId, setActiveChatAnalysisId] = useState<string | null>(null);
   const [chats, setChats] = useState<ChatMessage[]>([]);
@@ -68,6 +63,23 @@ function VideoAnalysisInner() {
   
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
+
+  // Full summary modal state
+  const [selectedAnalysisForModal, setSelectedAnalysisForModal] = useState<YoutubeAnalysis | null>(null);
+
+  // Helper to get a plain text preview from markdown content
+  const getMarkdownPreview = (text: string | null, maxLength = 120) => {
+    if (!text) return "";
+    // Strip simple markdown tags
+    const plainText = text
+      .replace(/[#*`_~\-]/g, "") // remove simple formatting chars
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // replace markdown links with text
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (plainText.length <= maxLength) return plainText;
+    return plainText.substring(0, maxLength) + "...";
+  };
 
   // Initial fetch
   const fetchAnalyses = async () => {
@@ -182,31 +194,6 @@ function VideoAnalysisInner() {
     };
   }, [user]);
 
-  // Handle addition of a new link
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!youtubeLinkInput.trim()) return;
-
-    // Minimal validation for YouTube Link format
-    const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
-    if (!ytRegex.test(youtubeLinkInput)) {
-      alert("Format link YouTube tidak valid. Contoh: https://www.youtube.com/watch?v=xxxx");
-      return;
-    }
-
-    setIsSubmittingLink(true);
-    try {
-      const newJob = await youtubeAnalysisApi.create(youtubeLinkInput);
-      setAnalyses((prev) => [newJob, ...prev]);
-      setYoutubeLinkInput("");
-      setIsAddModalOpen(false);
-    } catch (err: any) {
-      alert(err.message || "Gagal menambahkan link untuk dianalisis.");
-    } finally {
-      setIsSubmittingLink(false);
-    }
-  };
-
   // Trigger Analysis manually (e.g. for failed jobs or new analyses)
   const handleTriggerAnalysis = async (id: string) => {
     try {
@@ -216,23 +203,6 @@ function VideoAnalysisInner() {
       );
     } catch (err: any) {
       alert(err.message || "Gagal memulai analisis video.");
-    }
-  };
-
-  // Delete Analysis
-  const handleDeleteClick = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus catatan analisis video ini?")) {
-      return;
-    }
-
-    try {
-      await youtubeAnalysisApi.delete(id);
-      setAnalyses((prev) => prev.filter((item) => item.id !== id));
-      if (activeChatAnalysisId === id) {
-        setActiveChatAnalysisId(null);
-      }
-    } catch (err: any) {
-      alert(err.message || "Gagal menghapus analisis.");
     }
   };
 
@@ -310,15 +280,6 @@ function VideoAnalysisInner() {
                 Analisis kekurangan fitur inklusi (subtitle, interpreter bahasa isyarat, kejelasan teks) pada video YouTube.
               </p>
             </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-label-md text-label-md py-3 px-6 rounded-xl clay-btn cursor-pointer font-bold border-none"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                add_circle
-              </span>
-              Tambah Video YouTube
-            </button>
           </header>
 
           {/* Search Bar */}
@@ -336,7 +297,7 @@ function VideoAnalysisInner() {
               />
             </div>
             <div className="font-label-md text-label-md text-on-surface-variant select-none">
-              Total link:{" "}
+              Total video:{" "}
               <span className="font-bold text-primary">{filteredAnalyses.length}</span> item
             </div>
           </div>
@@ -377,7 +338,7 @@ function VideoAnalysisInner() {
                         <span className="material-symbols-outlined text-5xl text-outline-variant/50 block mb-2">
                           analytics
                         </span>
-                        Belum ada video YouTube yang ditambahkan untuk dianalisis.
+                        Belum ada video yang ditambahkan di Dashboard untuk dianalisis.
                       </td>
                     </tr>
                   ) : (
@@ -418,6 +379,12 @@ function VideoAnalysisInner() {
                             
                             {/* Badges */}
                             <div>
+                              {(!item.status || (item.status !== "pending" && item.status !== "processing" && item.status !== "completed" && item.status !== "failed")) && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-surface-variant/60 text-on-surface-variant">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/50" />
+                                  Belum Dianalisis
+                                </span>
+                              )}
                               {item.status === "pending" && (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-surface-variant text-on-surface-variant animate-pulse">
                                   <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant" />
@@ -473,25 +440,37 @@ function VideoAnalysisInner() {
                         {/* Summary & Suggestions Column */}
                         <td className="py-4 px-4 border-r border-outline-variant/10">
                           {item.status === "completed" ? (
-                            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-3 pr-2">
                               
                               {/* Summary Card */}
-                              <div className="bg-surface-container-low/40 rounded-xl p-4 border border-outline-variant/5">
-                                <h4 className="font-bold text-xs text-primary uppercase tracking-wider mb-2 flex items-center gap-1.5 select-none">
-                                  <span className="material-symbols-outlined text-[16px]">summarize</span>
-                                  Ringkasan Alur & Konten
+                              <div className="bg-surface-container-low/40 rounded-xl p-3 border border-outline-variant/5">
+                                <h4 className="font-bold text-[11px] text-primary uppercase tracking-wider mb-1 flex items-center gap-1 select-none">
+                                  <span className="material-symbols-outlined text-[14px]">summarize</span>
+                                  Ringkasan Alur
                                 </h4>
-                                <CustomMarkdownRenderer text={item.summary || ""} className="text-on-surface-variant font-medium text-sm leading-relaxed" />
+                                <p className="text-on-surface-variant font-medium text-xs leading-relaxed">
+                                  {getMarkdownPreview(item.summary, 120)}
+                                </p>
                               </div>
 
                               {/* Improvement Suggestions Card */}
-                              <div className="bg-surface-container-low/40 rounded-xl p-4 border border-outline-variant/5">
-                                <h4 className="font-bold text-xs text-secondary uppercase tracking-wider mb-2 flex items-center gap-1.5 select-none">
-                                  <span className="material-symbols-outlined text-[16px]">accessibility_new</span>
-                                  Rekomendasi Inklusi & Aksesibilitas
+                              <div className="bg-surface-container-low/40 rounded-xl p-3 border border-outline-variant/5">
+                                <h4 className="font-bold text-[11px] text-secondary uppercase tracking-wider mb-1 flex items-center gap-1 select-none">
+                                  <span className="material-symbols-outlined text-[14px]">accessibility_new</span>
+                                  Rekomendasi Inklusi
                                 </h4>
-                                <CustomMarkdownRenderer text={item.improvementSuggestions || ""} className="text-on-surface-variant font-medium text-sm leading-relaxed" />
+                                <p className="text-on-surface-variant font-medium text-xs leading-relaxed">
+                                  {getMarkdownPreview(item.improvementSuggestions, 120)}
+                                </p>
                               </div>
+
+                              <button
+                                onClick={() => setSelectedAnalysisForModal(item)}
+                                className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover font-semibold bg-transparent border-none cursor-pointer hover:underline mt-1 p-0"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">visibility</span>
+                                Lihat Selengkapnya
+                              </button>
 
                             </div>
                           ) : (
@@ -500,6 +479,7 @@ function VideoAnalysisInner() {
                                 hourglass_empty
                               </span>
                               <span className="text-xs font-medium">
+                                {(!item.status || (item.status !== "pending" && item.status !== "processing" && item.status !== "failed")) && "Video belum dianalisis. Tekan tombol play untuk memulai."}
                                 {item.status === "pending" && "Menunggu giliran antrean..."}
                                 {item.status === "processing" && "AI sedang merumuskan inklusi..."}
                                 {item.status === "failed" && "Analisis gagal. Silakan coba lagi."}
@@ -513,7 +493,7 @@ function VideoAnalysisInner() {
                           <div className="flex items-center justify-end gap-2">
                             
                             {/* Analyze / Re-analyze Button */}
-                            {(item.status === "pending" || item.status === "failed" || item.status === "completed") && (
+                            {item.status !== "processing" && (
                               <button
                                 onClick={() => handleTriggerAnalysis(item.id)}
                                 title={item.status === "completed" ? "Analisis Ulang" : "Mulai Analisis"}
@@ -545,17 +525,6 @@ function VideoAnalysisInner() {
                               </span>
                             </button>
 
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => handleDeleteClick(item.id)}
-                              title="Hapus Catatan"
-                              className="p-2 text-outline hover:text-error bg-error-container/10 hover:bg-error-container/40 rounded-lg cursor-pointer border-none flex items-center justify-center transition-all"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">
-                                delete
-                              </span>
-                            </button>
-
                           </div>
                         </td>
 
@@ -569,78 +538,6 @@ function VideoAnalysisInner() {
 
         </div>
       </main>
-
-      {/* MODAL: Tambah Link YouTube */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 transition-all">
-          <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl max-w-md w-full shadow-2xl p-6 relative clay-card">
-            
-            {/* Close button */}
-            <button
-              onClick={() => setIsAddModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface border-none bg-transparent cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-xl">close</span>
-            </button>
-
-            <h3 className="font-display-md text-display-md text-on-surface mb-2 select-none">
-              Analisis Video Baru
-            </h3>
-            <p className="text-sm text-on-surface-variant mb-5 select-none leading-relaxed">
-              Daftarkan tautan video YouTube edukasi Anda untuk dianalisis oleh AI. Maksimal durasi video adalah **6 menit** agar proses antrean efisien.
-            </p>
-
-            <form onSubmit={handleAddSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-primary select-none">
-                  Tautan Video YouTube
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant/70 text-lg">
-                    link
-                  </span>
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    value={youtubeLinkInput}
-                    onChange={(e) => setYoutubeLinkInput(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-surface text-on-surface rounded-xl border border-outline-variant/30 focus:border-primary focus:outline-none text-sm shadow-[inset_1px_1px_2px_rgba(11,28,48,0.02)]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 justify-end pt-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-5 py-2.5 bg-surface-container hover:bg-surface-container-high rounded-xl text-sm font-semibold border-none cursor-pointer text-on-surface-variant"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingLink}
-                  className="px-5 py-2.5 bg-primary text-on-primary rounded-xl text-sm font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 active:scale-[0.98] transition-all"
-                >
-                  {isSubmittingLink ? (
-                    <>
-                      <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
-                      Menyimpan...
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-[18px]">send</span>
-                      Kirim Ke Antrean
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-
-          </div>
-        </div>
-      )}
 
       {/* DRAWER: Chat / Tanya Jawab Lanjutan */}
       {activeChatAnalysisId && activeAnalysis && (
@@ -781,6 +678,118 @@ function VideoAnalysisInner() {
               </button>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Detail Ringkasan Lengkap */}
+      {selectedAnalysisForModal && (
+        <div
+          aria-labelledby="modal-title"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+          role="dialog"
+        >
+          {/* Backdrop */}
+          <div
+            aria-hidden="true"
+            className="fixed inset-0 bg-inverse-surface/40 backdrop-blur-[20px]"
+            onClick={() => setSelectedAnalysisForModal(null)}
+          />
+
+          {/* Panel */}
+          <div className="relative bg-surface-container-lowest rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl border border-outline-variant/10 z-10 overflow-hidden">
+            {/* Close Button */}
+            <button
+              aria-label="Tutup modal"
+              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container cursor-pointer clay-btn border-none z-20"
+              onClick={() => setSelectedAnalysisForModal(null)}
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                close
+              </span>
+            </button>
+
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4 shrink-0 select-none border-b border-outline-variant/15">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-primary-container/20 rounded-2xl flex items-center justify-center text-primary shadow-inner">
+                  <span
+                    aria-hidden="true"
+                    className="material-symbols-outlined text-[28px]"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    analytics
+                  </span>
+                </div>
+                <div className="max-w-[calc(100%-4rem)]">
+                  <h3
+                    className="font-headline-sm text-headline-sm text-on-surface line-clamp-1 leading-snug"
+                    id="modal-title"
+                  >
+                    Hasil Analisis Inklusi Lengkap
+                  </h3>
+                  <p className="font-caption text-caption text-on-surface-variant truncate mt-0.5">
+                    {selectedAnalysisForModal.title || "Video YouTube"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-surface/30">
+              
+              {/* Summary Section */}
+              <div className="bg-surface-container-low/60 rounded-2xl p-5 border border-outline-variant/10">
+                <h4 className="font-bold text-sm text-primary uppercase tracking-wider mb-3.5 flex items-center gap-2 select-none border-b border-outline-variant/10 pb-2">
+                  <span className="material-symbols-outlined text-[20px]">summarize</span>
+                  Ringkasan Alur & Konten Video
+                </h4>
+                <CustomMarkdownRenderer
+                  text={selectedAnalysisForModal.summary || "Tidak ada ringkasan."}
+                  className="text-on-surface-variant font-medium text-sm leading-relaxed"
+                />
+              </div>
+
+              {/* Suggestions Section */}
+              <div className="bg-surface-container-low/60 rounded-2xl p-5 border border-outline-variant/10">
+                <h4 className="font-bold text-sm text-secondary uppercase tracking-wider mb-3.5 flex items-center gap-2 select-none border-b border-outline-variant/10 pb-2">
+                  <span className="material-symbols-outlined text-[20px]">accessibility_new</span>
+                  Rekomendasi Inklusi & Aksesibilitas
+                </h4>
+                <CustomMarkdownRenderer
+                  text={selectedAnalysisForModal.improvementSuggestions || "Tidak ada rekomendasi."}
+                  className="text-on-surface-variant font-medium text-sm leading-relaxed"
+                />
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 flex items-center justify-between border-t border-outline-variant/20 shrink-0 bg-surface-container-lowest">
+              
+              {/* Tanya Jawab shortcut */}
+              <button
+                onClick={() => {
+                  const id = selectedAnalysisForModal.id;
+                  setSelectedAnalysisForModal(null);
+                  handleChatOpen(id);
+                }}
+                className="px-5 py-2.5 rounded-xl font-label-md text-label-md bg-secondary/15 text-secondary hover:bg-secondary hover:text-on-secondary cursor-pointer font-bold border-none transition-all flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">chat</span>
+                Tanya Jawab Lanjutan
+              </button>
+
+              <div className="flex gap-3">
+                <button
+                  className="px-6 py-2.5 rounded-xl font-label-md text-label-md bg-primary text-on-primary clay-btn cursor-pointer font-bold border-none"
+                  onClick={() => setSelectedAnalysisForModal(null)}
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

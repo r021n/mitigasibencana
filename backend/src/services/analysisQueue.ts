@@ -6,7 +6,7 @@ import { promisify } from "util";
 import { eq, asc } from "drizzle-orm";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { db } from "../db";
-import { youtubeAnalyses } from "../db/schema";
+import { videos, userVideos } from "../db/schema";
 import { broadcastProgress } from "./websocket";
 
 const execPromise = promisify(exec);
@@ -50,12 +50,17 @@ export const analysisQueue = {
       while (true) {
         shouldWakeUp = false;
 
-        // Fetch next pending job
+        // Fetch next pending job from videos joined with userVideos for the owner userId
         const pendingJobs = await db
-          .select()
-          .from(youtubeAnalyses)
-          .where(eq(youtubeAnalyses.status, "pending"))
-          .orderBy(asc(youtubeAnalyses.createdAt))
+          .select({
+            id: videos.id,
+            youtubeLink: videos.youtubeLink,
+            userId: userVideos.userId,
+          })
+          .from(videos)
+          .innerJoin(userVideos, eq(videos.id, userVideos.videoId))
+          .where(eq(videos.analysisStatus, "pending"))
+          .orderBy(asc(videos.analysisCreatedAt))
           .limit(1);
 
         if (pendingJobs.length === 0) {
@@ -73,15 +78,15 @@ export const analysisQueue = {
           console.error(`[Queue] Failed processing job ${job.id}:`, jobError);
           // Set status to failed in database
           await db
-            .update(youtubeAnalyses)
+            .update(videos)
             .set({
-              status: "failed",
+              analysisStatus: "failed",
               progress: 0,
               progressMessage: "Proses analisis gagal.",
               errorMessage: jobError.message || "Unknown error occurred.",
-              updatedAt: Date.now(),
+              analysisUpdatedAt: Date.now(),
             })
-            .where(eq(youtubeAnalyses.id, job.id));
+            .where(eq(videos.id, job.id));
 
           // Broadcast failure to client
           broadcastProgress(job.userId, job.id, "failed", 0, "Proses analisis gagal.", {
@@ -117,14 +122,14 @@ export const analysisQueue = {
       console.log(`[Queue][${jobId}] Memeriksa durasi video...`);
       broadcastProgress(userId, jobId, "processing", 5, "Memeriksa durasi video...");
       await db
-        .update(youtubeAnalyses)
+        .update(videos)
         .set({
-          status: "processing",
+          analysisStatus: "processing",
           progress: 5,
           progressMessage: "Memeriksa durasi video...",
-          updatedAt: Date.now(),
+          analysisUpdatedAt: Date.now(),
         })
-        .where(eq(youtubeAnalyses.id, jobId));
+        .where(eq(videos.id, jobId));
 
       let durationInSeconds = 0;
       let videoTitle = "Video YouTube";
@@ -159,23 +164,23 @@ export const analysisQueue = {
         throw new Error("Durasi video melebihi batas maksimal yang diizinkan (6 menit).");
       }
 
-      // Update Judul di Database
+      // Update Judul di Database (hanya jika judul kosong atau generic)
       await db
-        .update(youtubeAnalyses)
-        .set({ title: videoTitle, updatedAt: Date.now() })
-        .where(eq(youtubeAnalyses.id, jobId));
+        .update(videos)
+        .set({ title: videoTitle, analysisUpdatedAt: Date.now() })
+        .where(eq(videos.id, jobId));
 
       // 2. Download Video (240p / worst resolution)
       console.log(`[Queue][${jobId}] Mengunduh video (kualitas 240p)...`);
       broadcastProgress(userId, jobId, "processing", 15, "Mengunduh video (kualitas 240p)...");
       await db
-        .update(youtubeAnalyses)
+        .update(videos)
         .set({
           progress: 15,
           progressMessage: "Mengunduh video (kualitas 240p)...",
-          updatedAt: Date.now(),
+          analysisUpdatedAt: Date.now(),
         })
-        .where(eq(youtubeAnalyses.id, jobId));
+        .where(eq(videos.id, jobId));
 
       // Mengunduh format terendah (biasanya 144p atau 240p) yang memiliki video mp4
       try {
@@ -190,13 +195,13 @@ export const analysisQueue = {
       console.log(`[Queue][${jobId}] Mengekstrak frame gambar tiap 15 detik...`);
       broadcastProgress(userId, jobId, "processing", 40, "Mengekstrak frame gambar...");
       await db
-        .update(youtubeAnalyses)
+        .update(videos)
         .set({
           progress: 40,
           progressMessage: "Mengekstrak frame gambar...",
-          updatedAt: Date.now(),
+          analysisUpdatedAt: Date.now(),
         })
-        .where(eq(youtubeAnalyses.id, jobId));
+        .where(eq(videos.id, jobId));
 
       try {
         // fps=1/15 mengambil 1 gambar setiap 15 detik.
@@ -248,13 +253,13 @@ export const analysisQueue = {
       console.log(`[Queue][${jobId}] Menganalisis inklusi video dengan AI Gemini...`);
       broadcastProgress(userId, jobId, "processing", 70, "Menganalisis inklusi video dengan AI Gemini...");
       await db
-        .update(youtubeAnalyses)
+        .update(videos)
         .set({
           progress: 70,
           progressMessage: "Menganalisis inklusi video dengan AI Gemini...",
-          updatedAt: Date.now(),
+          analysisUpdatedAt: Date.now(),
         })
-        .where(eq(youtubeAnalyses.id, jobId));
+        .where(eq(videos.id, jobId));
 
       // Persiapkan payload multimodal untuk Gemini API sesuai panduan @google/genai
       const contentsPayload: any[] = [];
@@ -274,19 +279,15 @@ export const analysisQueue = {
       const promptText = `
         Anda adalah pakar aksesibilitas dan inklusi media pembelajaran.
         Saya mengunggah beberapa tangkapan layar (screenshots) dari sebuah video edukasi kebencanaan yang berurutan setiap 15 detik.
-        Tolong analisis video ini secara mendalam dengan fokus pada aspek inklusi dan aksesibilitas bagi audiens yang beragam (termasuk anak-anak, lansia, dan penyandang disabilitas).
 
         Tugas Anda adalah:
-        1. Buat RINGKASAN VIDEO (summary): Dapatkan ringkasan alur visual dan isi konten video berdasarkan gambar-gambar ini.
-        2. Tentukan SARAN IMPROVEMENT INKLUSI (improvementSuggestions): Berikan saran konkret, taktis, dan dapat segera diterapkan untuk meningkatkan inklusi video tersebut. Beberapa poin yang wajib Anda tinjau:
-           - Apakah terdapat teks atau subtitle? Apakah ukurannya, jenis hurufnya, dan kontras warnanya cukup terbaca?
-           - Apakah ada juru bahasa isyarat (sign language interpreter) di layar?
-           - Apakah konten visualnya jelas dan tidak terlalu cepat/membingungkan bagi anak-anak atau lansia?
-           - Rekomendasi konkret apa yang bisa diterapkan oleh pembuat video agar video ini ramah disabilitas (misal: menambahkan audio deskripsi, interpreter, atau merevisi tata letak teks)?
+        1. Buat RINGKASAN VIDEO (summary): Dapatkan ringkasan singkat alur visual dan isi konten video kebencanaan berdasarkan gambar-gambar ini. Usahakan ringkasan yang dibuat padat, jelas, singkat, dan tidak terlalu panjang (maksimal 2 paragraf pendek).
+        2. Tentukan SARAN IMPROVEMENT INKLUSI (improvementSuggestions): Berikan rekomendasi singkat dan taktis untuk meningkatkan fitur inklusi video (seperti teks/subtitle, interpreter bahasa isyarat, kontras warna, tempo, dll.).
+           Format saran ini sebagai daftar poin-poin sederhana (bullet list, menggunakan tanda strip "-"). Usahakan sangat ringkas, padat, dan langsung pada intinya. Jangan gunakan format checklist/markdown task (jangan gunakan kotak centang).
 
         Kembalikan output dalam format JSON terstruktur dengan kunci:
-        - "summary": String ringkasan video (format dengan markdown yang indah jika perlu).
-        - "improvementSuggestions": String berisi saran improvement (format dengan markdown menggunakan poin-poin checklist yang rapi).
+        - "summary": String ringkasan singkat video (gunakan markdown secukupnya).
+        - "improvementSuggestions": String berisi daftar poin-poin sederhana saran perbaikan (bullet list).
       `;
       contentsPayload.push({ text: promptText });
 
@@ -302,11 +303,11 @@ export const analysisQueue = {
               properties: {
                 summary: {
                   type: "STRING",
-                  description: "Ringkasan alur visual dan isi konten video kebencanaan secara terperinci.",
+                  description: "Ringkasan singkat, padat, dan jelas dari alur visual dan isi konten video kebencanaan.",
                 },
                 improvementSuggestions: {
                   type: "STRING",
-                  description: "Rekomendasi konkret, terstruktur, dan taktis untuk meningkatkan fitur inklusi (subtitle, interpreter bahasa isyarat, kontras teks, tempo, dll.) dalam format markdown.",
+                  description: "Daftar poin-poin ringkas sederhana (bullet list) untuk saran perbaikan inklusi video.",
                 },
               },
               required: ["summary", "improvementSuggestions"],
@@ -328,16 +329,16 @@ export const analysisQueue = {
       // 5. Simpan Hasil Analisis & Selesai
       console.log(`[Queue][${jobId}] Analisis selesai sukses! Menyimpan ke DB...`);
       await db
-        .update(youtubeAnalyses)
+        .update(videos)
         .set({
-          status: "completed",
+          analysisStatus: "completed",
           progress: 100,
           progressMessage: "Analisis selesai.",
           summary,
           improvementSuggestions,
-          updatedAt: Date.now(),
+          analysisUpdatedAt: Date.now(),
         })
-        .where(eq(youtubeAnalyses.id, jobId));
+        .where(eq(videos.id, jobId));
 
       // Broadcast sukses ke klien
       broadcastProgress(userId, jobId, "completed", 100, "Analisis selesai.", {
