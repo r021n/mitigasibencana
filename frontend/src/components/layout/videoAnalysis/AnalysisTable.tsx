@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { YoutubeAnalysis } from "../../../pages/VideoAnalysisPage"; // Sesuaikan path
 
 interface AnalysisTableProps {
@@ -16,7 +16,9 @@ export default function AnalysisTable({
   onChatOpen,
   onSelectModal,
 }: AnalysisTableProps) {
-  const [triggeringIds, setTriggeringIds] = useState<Record<string, boolean>>({});
+  const [triggeringIds, setTriggeringIds] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const handleTriggerClick = async (id: string) => {
     if (triggeringIds[id]) return;
@@ -274,32 +276,35 @@ export default function AnalysisTable({
                   {/* Actions */}
                   <td className="py-4 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {item.status !== "processing" && item.status !== "pending" && (
-                        <button
-                          disabled={triggeringIds[item.id]}
-                          onClick={() => handleTriggerClick(item.id)}
-                          title={
-                            item.status === "completed"
-                              ? "Analisis Ulang"
-                              : "Mulai Analisis"
-                          }
-                          className={`p-2 rounded-lg border-none flex items-center justify-center transition-all ${
-                            triggeringIds[item.id]
-                              ? "bg-surface-container text-outline-variant cursor-not-allowed opacity-50"
-                              : item.status === "completed"
-                                ? "text-outline hover:text-primary bg-surface-container hover:bg-primary/10 cursor-pointer"
-                                : "text-primary bg-primary/15 hover:bg-primary hover:text-on-primary font-bold shadow-sm cursor-pointer"
-                          }`}
-                        >
-                          <span className={`material-symbols-outlined text-[20px] ${triggeringIds[item.id] ? "animate-spin" : ""}`}>
-                            {triggeringIds[item.id]
-                              ? "sync"
-                              : item.status === "completed"
-                                ? "autorenew"
-                                : "play_arrow"}
-                          </span>
-                        </button>
-                      )}
+                      {item.status !== "processing" &&
+                        item.status !== "pending" && (
+                          <button
+                            disabled={triggeringIds[item.id]}
+                            onClick={() => handleTriggerClick(item.id)}
+                            title={
+                              item.status === "completed"
+                                ? "Analisis Ulang"
+                                : "Mulai Analisis"
+                            }
+                            className={`p-2 rounded-lg border-none flex items-center justify-center transition-all ${
+                              triggeringIds[item.id]
+                                ? "bg-surface-container text-outline-variant cursor-not-allowed opacity-50"
+                                : item.status === "completed"
+                                  ? "text-outline hover:text-primary bg-surface-container hover:bg-primary/10 cursor-pointer"
+                                  : "text-primary bg-primary/15 hover:bg-primary hover:text-on-primary font-bold shadow-sm cursor-pointer"
+                            }`}
+                          >
+                            <span
+                              className={`material-symbols-outlined text-[20px] ${triggeringIds[item.id] ? "animate-spin" : ""}`}
+                            >
+                              {triggeringIds[item.id]
+                                ? "sync"
+                                : item.status === "completed"
+                                  ? "autorenew"
+                                  : "play_arrow"}
+                            </span>
+                          </button>
+                        )}
 
                       <button
                         disabled={item.status !== "completed"}

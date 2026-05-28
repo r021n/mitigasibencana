@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import LoginForm from "../components/auth/LoginForm";
 import RegisterForm from "../components/auth/RegisterForm";
+import TopNavbar from "../components/layout/TopNavbar";
 
 export default function AuthPage() {
   const location = useLocation();
@@ -18,48 +19,7 @@ export default function AuthPage() {
 
   return (
     <>
-      {/* TopNavBar Shared Component */}
-      <header className="fixed top-0 left-0 w-full z-50 bg-surface/80 backdrop-blur-md shadow-sm border-b border-outline-variant/30">
-        <div className="flex justify-between items-center px-margin-desktop h-16 max-w-container-max mx-auto">
-          {/* Brand */}
-          <Link
-            to="/"
-            className="font-headline-sm text-headline-sm font-bold text-primary tracking-tight"
-          >
-            MitigasiBencana
-          </Link>
-
-          {/* Navigation Links (Desktop) */}
-          <nav className="flex items-center gap-gutter">
-            <Link
-              to="/dashboard"
-              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/"
-              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg"
-            >
-              Kumpulan Video
-            </Link>
-            <Link
-              to="/"
-              className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg"
-            >
-              Tentang Kami
-            </Link>
-          </nav>
-
-          {/* Trailing Action */}
-          <Link
-            to={isLogin ? "/register" : "/login"}
-            className="block font-label-md text-label-md bg-primary text-on-primary rounded-full px-6 py-2 shadow-[0_6px_16px_rgba(0,74,198,0.25),inset_2px_2px_4px_rgba(255,255,255,0.3)] active:scale-95 active:translate-y-0.5 active:shadow-none font-semibold text-center"
-          >
-            {isLogin ? "Register" : "Login"}
-          </Link>
-        </div>
-      </header>
+      <TopNavbar />
 
       {/* Main Content (Centered Form Card both Vertically & Horizontally below the h-16 Navbar, No Footer) */}
       <main className="flex-grow min-h-[calc(100vh-4rem)] mt-16 flex items-center justify-center relative overflow-hidden py-8">
