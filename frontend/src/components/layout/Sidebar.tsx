@@ -101,6 +101,27 @@ export default function Sidebar() {
                     {open && <span>Analisis Inklusi</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {displayUser.status === "admin" && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={location.pathname.startsWith("/admin/materi")}
+                      title={!open ? "Kelola Materi" : undefined}
+                      onClick={() => navigate("/admin/materi")}
+                    >
+                      <span
+                        className="material-symbols-outlined flex items-center justify-center"
+                        style={{
+                          fontVariationSettings: `'FILL' ${
+                            location.pathname.startsWith("/admin/materi") ? 1 : 0
+                          }`,
+                        }}
+                      >
+                        menu_book
+                      </span>
+                      {open && <span>Kelola Materi</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     isActive={isSettingsActive}

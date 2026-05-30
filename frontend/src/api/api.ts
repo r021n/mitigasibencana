@@ -159,3 +159,61 @@ export const youtubeAnalysisApi = {
   },
 };
 
+export const materialApi = {
+  getAll: async () => {
+    return fetchWithAuth("/materials", {
+      method: "GET",
+    });
+  },
+  getById: async (id: string) => {
+    return fetchWithAuth(`/materials/${id}`, {
+      method: "GET",
+    });
+  },
+  create: async (data: { title: string; content: string; status: "publish" | "draft" }) => {
+    return fetchWithAuth("/materials", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+  edit: async (id: string, data: { title?: string; content?: string; status?: "publish" | "draft" }) => {
+    return fetchWithAuth(`/materials/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+  delete: async (id: string) => {
+    return fetchWithAuth(`/materials/${id}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+export const uploadApi = {
+  uploadFile: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token = localStorage.getItem("auth_token");
+    const headers = new Headers();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to upload file");
+    }
+
+    // Convert relative URL to absolute API URL if needed, or just return as is
+    return `${API_BASE_URL}${data.url}`;
+  }
+};
+
+

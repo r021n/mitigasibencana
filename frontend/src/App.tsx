@@ -7,6 +7,10 @@ import UserInfoPage from './pages/UserInfoPage';
 import VideoCollectionPage from './pages/VideoCollectionPage';
 import VideoViewPage from './pages/VideoViewPage';
 import VideoAnalysisPage from './pages/VideoAnalysisPage';
+import MateriListPage from './pages/MateriListPage';
+import MateriDetailPage from './pages/MateriDetailPage';
+import MateriManagementPage from './pages/MateriManagementPage';
+import MateriEditorPage from './pages/MateriEditorPage';
 import { useAuthStore } from './store/authStore';
 import { useAccessibilityStore } from './store/accessibilityStore';
 import InclusionWidget from './components/ui/InclusionWidget';
@@ -159,6 +163,11 @@ function App() {
           <Route path="/videos/:id" element={<VideoViewPage />} />
           <Route path="/settings" element={<UserInfoPage />} />
           <Route path="/analysis" element={<VideoAnalysisPage />} />
+          <Route path="/materi" element={<MateriListPage />} />
+          <Route path="/materi/:id" element={<MateriDetailPage />} />
+          <Route path="/admin/materi" element={<MateriManagementPage />} />
+          <Route path="/admin/materi/editor" element={<MateriEditorPage />} />
+          <Route path="/admin/materi/editor/:id" element={<MateriEditorPage />} />
         </Routes>
       </div>
       <InclusionWidget />

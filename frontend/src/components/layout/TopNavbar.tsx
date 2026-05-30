@@ -42,6 +42,16 @@ export default function TopNavbar() {
             Kumpulan Video
           </Link>
           <Link
+            to="/materi"
+            className={`font-label-md text-label-md px-3 py-2 rounded-lg transition-all duration-200 ${
+              location.pathname.startsWith("/materi")
+                ? "text-primary bg-surface-container-low"
+                : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low"
+            }`}
+          >
+            Materi
+          </Link>
+          <Link
             to="#"
             className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg transition-all duration-200"
           >

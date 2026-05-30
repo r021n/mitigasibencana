@@ -5,10 +5,14 @@ import auth from './routes/auth'
 import videos from './routes/videos'
 import comments from './routes/comments'
 import analysis from './routes/analysis'
+import materials from './routes/materials'
+import upload from './routes/upload'
 import { WebSocketServer } from 'ws'
 import { initWebSocket } from './services/websocket'
 import { analysisQueue } from './services/analysisQueue'
 import { serve } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
+import { resolve } from 'path'
 
 const app = new Hono()
 
@@ -47,6 +51,10 @@ app.route('/auth', auth)
 app.route('/videos', videos)
 app.route('/comments', comments)
 app.route('/analysis', analysis)
+app.route('/materials', materials)
+app.route('/upload', upload)
+
+app.use('/uploads/*', serveStatic({ root: resolve(process.cwd()) }))
 
 const port = parseInt(process.env.PORT || '3000')
 

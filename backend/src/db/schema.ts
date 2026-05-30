@@ -81,3 +81,20 @@ export const youtubeAnalysisChatsRelations = relations(youtubeAnalysisChats, ({ 
   }),
 }));
 
+export const materials = sqliteTable("materials", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  authorId: text("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["draft", "publish"] }).default("draft").notNull(),
+  createdAt: integer("created_at").notNull().$defaultFn(() => Date.now()),
+  updatedAt: integer("updated_at").notNull().$defaultFn(() => Date.now()),
+});
+
+export const materialsRelations = relations(materials, ({ one }) => ({
+  author: one(users, {
+    fields: [materials.authorId],
+    references: [users.id],
+  }),
+}));
+
