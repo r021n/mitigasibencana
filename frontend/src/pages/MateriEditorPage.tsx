@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TiptapEditor from "../components/editor/TiptapEditor";
 import { materialApi, uploadApi } from "../api/api";
@@ -164,7 +164,9 @@ function MateriEditorInner() {
                 </label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as "publish" | "draft")}
+                  onChange={(e) =>
+                    setStatus(e.target.value as "publish" | "draft")
+                  }
                   className="w-full px-4 py-2.5 bg-surface text-on-surface rounded-xl border border-outline-variant/30 focus:border-primary focus:outline-none text-body-md shadow-[inset_1px_1px_2px_rgba(11,28,48,0.02)] transition-all cursor-pointer"
                 >
                   <option value="publish">Publik (Publish)</option>

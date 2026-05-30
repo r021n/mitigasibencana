@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { materialApi } from "../api/api";
 import { useAuthStore } from "../store/authStore";
@@ -59,7 +59,7 @@ function MateriManagementInner() {
       materi.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (materi.author?.name || "")
         .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+        .includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -81,7 +81,8 @@ function MateriManagementInner() {
                 Manajemen Materi Edukasi
               </h2>
               <p className="font-body-lg text-body-lg text-on-surface-variant mt-2 select-none">
-                Kelola materi edukasi berbasis teks dan media untuk menunjang pemahaman siswa dalam mitigasi bencana.
+                Kelola materi edukasi berbasis teks dan media untuk menunjang
+                pemahaman siswa dalam mitigasi bencana.
               </p>
             </div>
             <button
@@ -211,11 +212,14 @@ function MateriManagementInner() {
                         </td>
                         <td className="py-4 px-4">
                           <span className="text-on-surface-variant font-medium">
-                            {new Date(materi.createdAt).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
+                            {new Date(materi.createdAt).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )}
                           </span>
                         </td>
                         <td className="py-4 px-4 text-right">
@@ -236,7 +240,9 @@ function MateriManagementInner() {
                             </a>
                             <button
                               aria-label="Edit Materi"
-                              onClick={() => navigate(`/admin/materi/editor/${materi.id}`)}
+                              onClick={() =>
+                                navigate(`/admin/materi/editor/${materi.id}`)
+                              }
                               className="p-2 text-outline hover:text-primary bg-surface-container rounded-lg cursor-pointer border-none flex items-center justify-center"
                             >
                               <span

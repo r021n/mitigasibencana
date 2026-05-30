@@ -38,6 +38,7 @@ function DashboardInner() {
 
   const [videos, setVideos] = useState<Video[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Video Form Modal State
@@ -118,6 +119,16 @@ function DashboardInner() {
       setIsLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchInput]);
 
   React.useEffect(() => {
     if (user) {
@@ -238,8 +249,8 @@ function DashboardInner() {
               <input
                 type="text"
                 placeholder="Cari nama video di sini..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-surface text-on-surface rounded-xl border border-outline-variant/30 focus:border-primary focus:outline-none text-body-md shadow-[inset_1px_1px_2px_rgba(11,28,48,0.02)]"
               />
             </div>
