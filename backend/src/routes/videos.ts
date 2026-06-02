@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { verify } from "hono/jwt";
 import { eq, and, like } from "drizzle-orm";
 import { db } from "../db";
-import { videos, userVideos, users } from "../db/schema";
+import { videos, userVideos, users, videoQuestions } from "../db/schema";
 
 const videosRoute = new Hono<{ Variables: { userId: string } }>();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
@@ -96,6 +96,39 @@ videosRoute.get("/public/:id", async (c) => {
     return c.json(result[0]);
   } catch (error) {
     console.error("Get Public Video By ID Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// GET public interactive questions for a video
+videosRoute.get("/public/:id/questions", async (c) => {
+  try {
+    const id = c.req.param("id");
+    // Verify video is published first
+    const videoResult = await db
+      .select({ id: videos.id })
+      .from(videos)
+      .where(and(eq(videos.id, id), eq(videos.status, "publish")));
+
+    if (videoResult.length === 0) {
+      return c.json({ error: "Video not found or not published" }, 404);
+    }
+
+    const questionsList = await db
+      .select()
+      .from(videoQuestions)
+      .where(eq(videoQuestions.videoId, id))
+      .orderBy(videoQuestions.timestamp);
+
+    // Parse options string to array
+    const mapped = questionsList.map((q: any) => ({
+      ...q,
+      options: JSON.parse(q.options),
+    }));
+
+    return c.json(mapped);
+  } catch (error) {
+    console.error("Get Public Questions Error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });
@@ -281,6 +314,174 @@ videosRoute.delete("/:id", async (c) => {
     return c.json({ success: true, message: "Video deleted successfully" }, 200);
   } catch (error) {
     console.error("Delete Video Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// GET interactive questions for a video (owner only)
+videosRoute.get("/:id/questions", async (c) => {
+  try {
+    const userId = c.get("userId") as string;
+    const id = c.req.param("id");
+
+    // Check ownership of video
+    const ownership = await db
+      .select()
+      .from(userVideos)
+      .where(and(eq(userVideos.userId, userId), eq(userVideos.videoId, id)));
+
+    if (ownership.length === 0) {
+      return c.json({ error: "Video not found or access denied" }, 404);
+    }
+
+    const questionsList = await db
+      .select()
+      .from(videoQuestions)
+      .where(eq(videoQuestions.videoId, id))
+      .orderBy(videoQuestions.timestamp);
+
+    // Parse options string to array
+    const mapped = questionsList.map((q: any) => ({
+      ...q,
+      options: JSON.parse(q.options),
+    }));
+
+    return c.json(mapped);
+  } catch (error) {
+    console.error("Get Questions Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// POST create interactive question for a video (owner only)
+videosRoute.post("/:id/questions", async (c) => {
+  try {
+    const userId = c.get("userId") as string;
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const { timestamp, question, options, correctAnswer, explanation } = body;
+
+    if (timestamp === undefined || !question || !options || !correctAnswer) {
+      return c.json({ error: "Timestamp, question, options, and correctAnswer are required" }, 400);
+    }
+
+    // Check ownership of video
+    const ownership = await db
+      .select()
+      .from(userVideos)
+      .where(and(eq(userVideos.userId, userId), eq(userVideos.videoId, id)));
+
+    if (ownership.length === 0) {
+      return c.json({ error: "Video not found or access denied" }, 404);
+    }
+
+    const newQuestion = await db
+      .insert(videoQuestions)
+      .values({
+        videoId: id,
+        timestamp: parseInt(timestamp),
+        question,
+        options: JSON.stringify(options),
+        correctAnswer,
+        explanation: explanation || "",
+      })
+      .returning();
+
+    const created = newQuestion[0];
+    return c.json({
+      ...created,
+      options: JSON.parse(created.options),
+    }, 201);
+  } catch (error) {
+    console.error("Create Question Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// PUT update interactive question (owner only)
+videosRoute.put("/:id/questions/:questionId", async (c) => {
+  try {
+    const userId = c.get("userId") as string;
+    const id = c.req.param("id");
+    const questionId = c.req.param("questionId");
+    const body = await c.req.json();
+    const { timestamp, question, options, correctAnswer, explanation } = body;
+
+    // Check ownership of video
+    const ownership = await db
+      .select()
+      .from(userVideos)
+      .where(and(eq(userVideos.userId, userId), eq(userVideos.videoId, id)));
+
+    if (ownership.length === 0) {
+      return c.json({ error: "Video not found or access denied" }, 404);
+    }
+
+    // Check that question belongs to video
+    const questionCheck = await db
+      .select()
+      .from(videoQuestions)
+      .where(and(eq(videoQuestions.id, questionId), eq(videoQuestions.videoId, id)));
+
+    if (questionCheck.length === 0) {
+      return c.json({ error: "Question not found" }, 404);
+    }
+
+    const updated = await db
+      .update(videoQuestions)
+      .set({
+        timestamp: timestamp !== undefined ? parseInt(timestamp) : undefined,
+        question: question !== undefined ? question : undefined,
+        options: options !== undefined ? JSON.stringify(options) : undefined,
+        correctAnswer: correctAnswer !== undefined ? correctAnswer : undefined,
+        explanation: explanation !== undefined ? explanation : undefined,
+      })
+      .where(eq(videoQuestions.id, questionId))
+      .returning();
+
+    const result = updated[0];
+    return c.json({
+      ...result,
+      options: JSON.parse(result.options),
+    }, 200);
+  } catch (error) {
+    console.error("Update Question Error:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// DELETE interactive question (owner only)
+videosRoute.delete("/:id/questions/:questionId", async (c) => {
+  try {
+    const userId = c.get("userId") as string;
+    const id = c.req.param("id");
+    const questionId = c.req.param("questionId");
+
+    // Check ownership of video
+    const ownership = await db
+      .select()
+      .from(userVideos)
+      .where(and(eq(userVideos.userId, userId), eq(userVideos.videoId, id)));
+
+    if (ownership.length === 0) {
+      return c.json({ error: "Video not found or access denied" }, 404);
+    }
+
+    // Check that question belongs to video
+    const questionCheck = await db
+      .select()
+      .from(videoQuestions)
+      .where(and(eq(videoQuestions.id, questionId), eq(videoQuestions.videoId, id)));
+
+    if (questionCheck.length === 0) {
+      return c.json({ error: "Question not found" }, 404);
+    }
+
+    await db.delete(videoQuestions).where(eq(videoQuestions.id, questionId));
+
+    return c.json({ success: true, message: "Question deleted successfully" }, 200);
+  } catch (error) {
+    console.error("Delete Question Error:", error);
     return c.json({ error: "Internal server error" }, 500);
   }
 });

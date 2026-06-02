@@ -216,4 +216,34 @@ export const uploadApi = {
   }
 };
 
+export const interactiveQuestionApi = {
+  getPublicQuestions: async (videoId: string) => {
+    return fetchWithAuth(`/videos/public/${videoId}/questions`, {
+      method: "GET",
+    });
+  },
+  getQuestions: async (videoId: string) => {
+    return fetchWithAuth(`/videos/${videoId}/questions`, {
+      method: "GET",
+    });
+  },
+  createQuestion: async (videoId: string, questionData: { timestamp: number; question: string; options: string[]; correctAnswer: string; explanation?: string }) => {
+    return fetchWithAuth(`/videos/${videoId}/questions`, {
+      method: "POST",
+      body: JSON.stringify(questionData),
+    });
+  },
+  editQuestion: async (videoId: string, questionId: string, questionData: { timestamp?: number; question?: string; options?: string[]; correctAnswer?: string; explanation?: string }) => {
+    return fetchWithAuth(`/videos/${videoId}/questions/${questionId}`, {
+      method: "PUT",
+      body: JSON.stringify(questionData),
+    });
+  },
+  deleteQuestion: async (videoId: string, questionId: string) => {
+    return fetchWithAuth(`/videos/${videoId}/questions/${questionId}`, {
+      method: "DELETE",
+    });
+  },
+};
+
 

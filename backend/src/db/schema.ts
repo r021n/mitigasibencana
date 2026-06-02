@@ -70,13 +70,32 @@ export const youtubeAnalysisChats = sqliteTable("youtube_analysis_chats", {
   createdAt: integer("created_at").notNull().$defaultFn(() => Date.now()),
 });
 
+export const videoQuestions = sqliteTable("video_questions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  videoId: text("video_id").notNull().references(() => videos.id, { onDelete: "cascade" }),
+  timestamp: integer("timestamp").notNull(),
+  question: text("question").notNull(),
+  options: text("options").notNull(), // JSON string representing options array
+  correctAnswer: text("correct_answer").notNull(),
+  explanation: text("explanation"),
+  createdAt: integer("created_at").notNull().$defaultFn(() => Date.now()),
+});
+
 export const videosRelations = relations(videos, ({ many }) => ({
   chats: many(youtubeAnalysisChats),
+  questions: many(videoQuestions),
 }));
 
 export const youtubeAnalysisChatsRelations = relations(youtubeAnalysisChats, ({ one }) => ({
   video: one(videos, {
     fields: [youtubeAnalysisChats.videoId],
+    references: [videos.id],
+  }),
+}));
+
+export const videoQuestionsRelations = relations(videoQuestions, ({ one }) => ({
+  video: one(videos, {
+    fields: [videoQuestions.videoId],
     references: [videos.id],
   }),
 }));

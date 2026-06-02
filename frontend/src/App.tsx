@@ -11,6 +11,7 @@ import MateriListPage from './pages/MateriListPage';
 import MateriDetailPage from './pages/MateriDetailPage';
 import MateriManagementPage from './pages/MateriManagementPage';
 import MateriEditorPage from './pages/MateriEditorPage';
+import InteractiveQuestionsPage from './pages/InteractiveQuestionsPage';
 import { useAuthStore } from './store/authStore';
 import { useAccessibilityStore } from './store/accessibilityStore';
 import InclusionWidget from './components/ui/InclusionWidget';
@@ -159,6 +160,7 @@ function App() {
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard/videos/:id/questions" element={<InteractiveQuestionsPage />} />
           <Route path="/videos" element={<VideoCollectionPage />} />
           <Route path="/videos/:id" element={<VideoViewPage />} />
           <Route path="/settings" element={<UserInfoPage />} />

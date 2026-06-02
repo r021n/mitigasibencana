@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
-import { videoApi, commentApi } from "../api/api";
+import { videoApi, commentApi, interactiveQuestionApi } from "../api/api";
 import { useAuthStore } from "../store/authStore";
 import TopNavbar from "../components/layout/TopNavbar";
+
+interface Question {
+  id: string;
+  videoId: string;
+  timestamp: number;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+}
 
 interface Video {
   id: string;
@@ -55,16 +65,37 @@ export default function VideoViewPage() {
   const [replyGuestName, setReplyGuestName] = useState("");
   const [isReplying, setIsReplying] = useState(false);
 
+  // Interactive Video States
+  const [interactiveQuestions, setInteractiveQuestions] = useState<Question[]>([]);
+  const [activeQuestion, setActiveQuestion] = useState<Question | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
+  const [player, setPlayer] = useState<any>(null);
+  const [playerState, setPlayerState] = useState<number>(-1);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+
+  const formatTime = (secs: number) => {
+    const mins = Math.floor(secs / 60);
+    const remainingSecs = Math.floor(secs % 60);
+    return `${mins.toString().padStart(2, "0")}:${remainingSecs.toString().padStart(2, "0")}`;
+  };
+
+  const ytId = video ? getYoutubeId(video.youtubeLink) : null;
+
   const fetchData = useCallback(async () => {
     if (!id) return;
     setIsLoading(true);
     try {
-      const [videoRes, commentsRes] = await Promise.all([
+      const [videoRes, commentsRes, questionsRes] = await Promise.all([
         videoApi.getPublicById(id),
         commentApi.getByVideoId(id),
+        interactiveQuestionApi.getPublicQuestions(id),
       ]);
       setVideo(videoRes);
       setComments(commentsRes);
+      setInteractiveQuestions(questionsRes);
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
@@ -75,6 +106,118 @@ export default function VideoViewPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // YouTube Player Initializer
+  useEffect(() => {
+    if (!ytId || isLoading) return;
+
+    let ytPlayer: any = null;
+
+    const initYTPlayer = () => {
+      const win = window as any;
+      if (!win.YT || !win.YT.Player) return;
+      
+      try {
+        ytPlayer = new win.YT.Player("youtube-player", {
+          videoId: ytId,
+          playerVars: {
+            autoplay: 0,
+            rel: 0,
+            modestbranding: 1,
+          },
+          events: {
+            onStateChange: (event: any) => {
+              setPlayerState(event.data);
+            },
+          },
+        });
+        setPlayer(ytPlayer);
+      } catch (err) {
+        console.error("Gagal menginisialisasi pemutar YouTube:", err);
+      }
+    };
+
+    const win = window as any;
+    if (win.YT && win.YT.Player) {
+      initYTPlayer();
+    } else {
+      if (!document.getElementById("youtube-iframe-api")) {
+        const tag = document.createElement("script");
+        tag.id = "youtube-iframe-api";
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName("script")[0];
+        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+      }
+
+      const checkYT = setInterval(() => {
+        const win = window as any;
+        if (win.YT && win.YT.Player) {
+          initYTPlayer();
+          clearInterval(checkYT);
+        }
+      }, 100);
+
+      return () => {
+        clearInterval(checkYT);
+        if (ytPlayer && ytPlayer.destroy) {
+          try {
+            ytPlayer.destroy();
+          } catch (e) {}
+        }
+      };
+    }
+
+    return () => {
+      if (ytPlayer && ytPlayer.destroy) {
+        try {
+          ytPlayer.destroy();
+        } catch (e) {}
+      }
+    };
+  }, [ytId, isLoading]);
+
+  // 1. General Time Poller (Always updates currentTime and duration when playing)
+  useEffect(() => {
+    if (!player) return;
+
+    try {
+      const dur = player.getDuration();
+      if (dur > 0) setDuration(dur);
+    } catch (e) {}
+
+    if (playerState !== 1) return;
+
+    const interval = setInterval(() => {
+      try {
+        const time = player.getCurrentTime();
+        setCurrentTime(time);
+        
+        const dur = player.getDuration();
+        if (dur > 0) setDuration(dur);
+      } catch (e) {}
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [player, playerState]);
+
+  // 2. Trigger Question Overlay when currentTime hits a question timestamp
+  useEffect(() => {
+    if (!player || activeQuestion || !interactiveQuestions.length) return;
+
+    const currentSec = Math.floor(currentTime);
+    const question = interactiveQuestions.find(
+      (q) => q.timestamp === currentSec && !answeredQuestionIds.has(q.id)
+    );
+
+    if (question) {
+      try {
+        player.pauseVideo();
+      } catch (e) {}
+      setActiveQuestion(question);
+      setSelectedAnswer(null);
+      setIsAnswerSubmitted(false);
+    }
+  }, [currentTime, player, interactiveQuestions, answeredQuestionIds, activeQuestion]);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,32 +288,205 @@ export default function VideoViewPage() {
     );
   }
 
-  const ytId = getYoutubeId(video.youtubeLink);
-
   return (
     <>
       <TopNavbar />
 
       {/* Main Content - 2 Columns */}
-      <main className="pt-16 lg:h-screen lg:overflow-hidden bg-surface flex flex-col">
-        <div className="max-w-container-max w-full mx-auto flex flex-col lg:flex-row gap-8 items-stretch flex-grow lg:overflow-hidden px-margin-desktop py-6">
+      <main className="pt-16 min-h-screen bg-surface flex flex-col">
+        <div className="max-w-container-max w-full mx-auto flex flex-col lg:flex-row gap-8 items-stretch px-margin-desktop py-6">
           {/* Left Column (Video & Details) - Static on Desktop */}
           <div className="w-full lg:w-2/3 flex flex-col gap-4 self-start">
-            <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-md">
+            <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-md relative">
               {ytId ? (
-                <iframe
-                  className="w-full h-full"
-                  src={`https://www.youtube.com/embed/${ytId}`}
-                  title={video.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
+                <div className="w-full h-full relative">
+                  <div id="youtube-player" className="w-full h-full"></div>
+                  {activeQuestion && (
+                    <div className="absolute inset-0 bg-inverse-surface/85 backdrop-blur-md flex items-center justify-center p-6 z-30 select-none transition-all duration-300">
+                      <div className="bg-surface text-on-surface rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-outline-variant/10 space-y-4 max-h-full overflow-y-auto hover-scrollbar">
+                        <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                          <span className="material-symbols-outlined text-base">quiz</span>
+                          <span>Pertanyaan Interaktif</span>
+                        </div>
+                        
+                        <h3 className="font-semibold text-on-surface text-body-lg whitespace-pre-wrap leading-snug">
+                          {activeQuestion.question}
+                        </h3>
+
+                        <div className="grid grid-cols-1 gap-2.5">
+                          {activeQuestion.options.map((optText, idx) => {
+                            const letter = ["A", "B", "C", "D"][idx];
+                            const isSelected = selectedAnswer === letter;
+                            const isCorrect = activeQuestion.correctAnswer === letter;
+                            
+                            let btnStyle = "bg-surface border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-low";
+                            let badgeStyle = "bg-primary/10 text-primary";
+
+                            if (isAnswerSubmitted) {
+                              if (isCorrect) {
+                                btnStyle = "bg-secondary-container border-secondary text-on-secondary-container font-semibold ring-2 ring-secondary/20";
+                                badgeStyle = "bg-secondary text-on-secondary";
+                              } else if (isSelected) {
+                                btnStyle = "bg-error-container/40 border-error text-on-error-container font-semibold ring-2 ring-error/20";
+                                badgeStyle = "bg-error text-on-error";
+                              } else {
+                                btnStyle = "bg-surface-container-low/50 border-outline-variant/10 text-on-surface-variant/40 opacity-60";
+                                badgeStyle = "bg-outline-variant/20 text-on-surface-variant/50";
+                              }
+                            } else if (isSelected) {
+                              btnStyle = "bg-primary-container/30 border-primary text-primary font-semibold ring-2 ring-primary/20";
+                              badgeStyle = "bg-primary text-on-primary";
+                            }
+
+                            return (
+                              <button
+                                key={letter}
+                                disabled={isAnswerSubmitted}
+                                onClick={() => setSelectedAnswer(letter)}
+                                className={`flex items-start text-left gap-3 p-3 rounded-xl border transition-all cursor-pointer ${btnStyle}`}
+                              >
+                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${badgeStyle}`}>
+                                  {letter}
+                                </span>
+                                <span className="text-sm mt-0.5">{optText}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {isAnswerSubmitted && (
+                          <div className="space-y-3 pt-1 border-t border-outline-variant/25">
+                            <div className="flex items-center gap-2 font-bold text-sm">
+                              {selectedAnswer === activeQuestion.correctAnswer ? (
+                                <div className="flex items-center gap-1.5 text-secondary">
+                                  <span className="material-symbols-outlined">check_circle</span>
+                                  <span>Jawaban Anda Benar!</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-error">
+                                  <span className="material-symbols-outlined">cancel</span>
+                                  <span>Jawaban Salah (Benar: {activeQuestion.correctAnswer})</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {activeQuestion.explanation && (
+                              <div className="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/30 text-xs text-on-surface-variant">
+                                <span className="font-bold text-on-surface flex items-center gap-1 mb-1">
+                                  <span className="material-symbols-outlined text-xs text-primary">lightbulb</span>
+                                  Pembahasan:
+                                </span>
+                                <p className="whitespace-pre-wrap leading-relaxed">{activeQuestion.explanation}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex justify-end pt-2">
+                          {!isAnswerSubmitted ? (
+                            <button
+                              disabled={!selectedAnswer}
+                              onClick={() => setIsAnswerSubmitted(true)}
+                              className="px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md font-bold rounded-xl clay-btn cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
+                            >
+                              Kirim Jawaban
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setAnsweredQuestionIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.add(activeQuestion.id);
+                                  return next;
+                                });
+                                setActiveQuestion(null);
+                                if (player) {
+                                  player.playVideo();
+                                }
+                              }}
+                              className="px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md font-bold rounded-xl clay-btn cursor-pointer transition-all active:scale-95"
+                            >
+                              Lanjutkan Video
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-white">
                   Invalid YouTube Link
                 </div>
               )}
             </div>
+
+            {/* Interactive Progress Bar & Question Markers */}
+            {ytId && duration > 0 && (
+              <div className="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/30 select-none">
+                <div className="flex items-center justify-between text-xs text-on-surface-variant font-semibold mb-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-primary">play_circle</span>
+                    <span>Waktu Putar</span>
+                  </div>
+                  <div className="font-mono bg-surface-container-high px-2 py-0.5 rounded text-on-surface">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </div>
+                </div>
+
+                <div 
+                  onClick={(e) => {
+                    if (!player || duration === 0) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+                    const targetTime = percentage * duration;
+                    player.seekTo(targetTime, true);
+                    setCurrentTime(targetTime);
+                  }}
+                  className="relative h-2.5 bg-outline-variant/30 rounded-full cursor-pointer hover:h-3 transition-all duration-200 group flex items-center"
+                >
+                  {/* Active Progress Track */}
+                  <div 
+                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                    className="h-full bg-primary rounded-full relative group-hover:bg-primary-container"
+                  ></div>
+
+                  {/* Playhead Handle */}
+                  <div 
+                    style={{ left: `${(currentTime / duration) * 100}%` }}
+                    className="absolute w-3.5 h-3.5 bg-surface border-2 border-primary rounded-full -translate-x-1/2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                  ></div>
+
+                  {/* Question Markers / Dots */}
+                  {interactiveQuestions.map((q) => {
+                    const percentage = (q.timestamp / duration) * 100;
+                    const isAnswered = answeredQuestionIds.has(q.id);
+                    return (
+                      <div
+                        key={q.id}
+                        style={{ left: `${percentage}%` }}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent trigger full bar click
+                          if (player) {
+                            player.seekTo(q.timestamp, true);
+                            setCurrentTime(q.timestamp);
+                          }
+                        }}
+                        className={`absolute w-3.5 h-3.5 rounded-full -translate-x-1/2 border-2 border-surface shadow-md cursor-pointer hover:scale-130 transition-transform z-10 ${
+                          isAnswered ? "bg-secondary" : "bg-tertiary-container"
+                        }`}
+                        title={`Soal Interaktif di ${formatTime(q.timestamp)} (${isAnswered ? "Selesai" : "Belum Dijawab"})`}
+                      >
+                        {!isAnswered && (
+                          <span className="absolute inset-0 rounded-full animate-ping bg-tertiary-container opacity-45 pointer-events-none"></span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div>
               <h1 className="font-display-sm text-display-sm font-bold text-on-surface mb-2">
                 {video.title}
@@ -202,7 +518,7 @@ export default function VideoViewPage() {
           </div>
 
           {/* Right Column (Comments) - Fixed Form at Bottom, Scrollable List */}
-          <div className="w-full lg:w-1/3 flex flex-col h-[550px] lg:h-full bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden shadow-sm">
+          <div className="w-full lg:w-1/3 flex flex-col h-[550px] lg:h-[calc(100vh-120px)] bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden shadow-sm lg:sticky lg:top-24">
             {/* Header */}
             <div className="p-4 border-b border-outline-variant/20 bg-surface-container-low/50">
               <h2 className="font-headline-md text-headline-md font-bold text-on-surface">

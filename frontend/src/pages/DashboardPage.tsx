@@ -373,6 +373,19 @@ function DashboardInner() {
                         <td className="py-4 px-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button
+                              aria-label="Kelola Soal Interaktif"
+                              onClick={() => navigate(`/dashboard/videos/${video.id}/questions`)}
+                              className="p-2 text-outline hover:text-secondary bg-surface-container rounded-lg cursor-pointer border-none flex items-center justify-center"
+                              title="Kelola Soal Interaktif"
+                            >
+                              <span
+                                aria-hidden="true"
+                                className="material-symbols-outlined text-[20px]"
+                              >
+                                quiz
+                              </span>
+                            </button>
+                            <button
                               aria-label="Edit Video"
                               onClick={() => handleEditClick(video)}
                               className="p-2 text-outline hover:text-primary bg-surface-container rounded-lg cursor-pointer border-none flex items-center justify-center"
