@@ -1,0 +1,1 @@
+ALTER TABLE `materials` ADD `audio_url` text;

@@ -104,6 +104,7 @@ export const materials = sqliteTable("materials", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   content: text("content").notNull(),
+  audioUrl: text("audio_url"),
   authorId: text("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   status: text("status", { enum: ["draft", "publish"] }).default("draft").notNull(),
   createdAt: integer("created_at").notNull().$defaultFn(() => Date.now()),

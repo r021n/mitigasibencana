@@ -170,13 +170,13 @@ export const materialApi = {
       method: "GET",
     });
   },
-  create: async (data: { title: string; content: string; status: "publish" | "draft" }) => {
+  create: async (data: { title: string; content: string; audioUrl?: string | null; status: "publish" | "draft" }) => {
     return fetchWithAuth("/materials", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
-  edit: async (id: string, data: { title?: string; content?: string; status?: "publish" | "draft" }) => {
+  edit: async (id: string, data: { title?: string; content?: string; audioUrl?: string | null; status?: "publish" | "draft" }) => {
     return fetchWithAuth(`/materials/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),

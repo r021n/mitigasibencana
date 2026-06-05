@@ -23,6 +23,8 @@ function MateriEditorInner() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const [status, setStatus] = useState<"publish" | "draft">("publish");
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
@@ -43,6 +45,7 @@ function MateriEditorInner() {
       const data = await materialApi.getById(id as string);
       setTitle(data.title);
       setContent(data.content);
+      setAudioUrl(data.audioUrl || "");
       setStatus(data.status);
     } catch (error) {
       console.error("Failed to fetch material:", error);
@@ -61,7 +64,7 @@ function MateriEditorInner() {
 
     try {
       setSaving(true);
-      const data = { title, content, status };
+      const data = { title, content, audioUrl: audioUrl || null, status };
 
       if (isEditing) {
         await materialApi.edit(id as string, data);
@@ -173,6 +176,97 @@ function MateriEditorInner() {
                   <option value="draft">Draft (Simpan Internal)</option>
                 </select>
               </div>
+            </div>
+
+            {/* Audio Upload Block */}
+            <div className="flex flex-col gap-2">
+              <label className="block text-label-md font-semibold text-on-surface-variant">
+                Audio Pembelajaran (Opsional)
+              </label>
+              <p className="font-caption text-caption text-on-surface-variant mb-2">
+                Unggah file audio (.mp3, .wav, .m4a) agar pengguna dapat mendengarkan materi ini.
+              </p>
+              
+              {audioUrl ? (
+                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-surface-container-low border border-outline-variant/30 rounded-2xl shadow-inner">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <span className="material-symbols-outlined text-4xl text-primary p-2 bg-primary-fixed rounded-xl select-none">
+                      audiotrack
+                    </span>
+                    <div className="truncate flex-grow">
+                      <p className="font-label-md text-label-md text-on-surface truncate font-semibold">
+                        Audio Materi Terunggah
+                      </p>
+                      <a
+                        href={audioUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-caption text-caption text-primary hover:underline truncate block max-w-[200px]"
+                      >
+                        Buka Tautan Audio
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex-grow w-full sm:w-auto flex justify-center sm:justify-start">
+                    <audio src={audioUrl} controls className="w-full max-w-md h-9" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAudioUrl("")}
+                    className="p-2.5 hover:bg-error-container text-error rounded-xl transition-colors cursor-pointer border border-error/20 bg-surface-container-lowest flex items-center justify-center sm:self-center"
+                    title="Hapus Audio"
+                  >
+                    <span className="material-symbols-outlined text-xl">delete</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="relative border-2 border-dashed border-outline-variant/50 rounded-2xl p-6 bg-surface hover:bg-surface-container-low hover:border-primary/50 transition-all flex flex-col items-center justify-center text-center group">
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      try {
+                        setIsUploading(true);
+                        const url = await handleUploadFile(file);
+                        if (url) {
+                          setAudioUrl(url);
+                        }
+                      } catch (err) {
+                        console.error(err);
+                      } finally {
+                        setIsUploading(false);
+                      }
+                    }}
+                    disabled={isUploading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <span className="material-symbols-outlined text-4xl text-on-surface-variant group-hover:text-primary transition-colors mb-3">
+                    {isUploading ? "sync" : "cloud_upload"}
+                  </span>
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <p className="font-label-md text-label-md text-primary font-bold animate-pulse">
+                        Mengunggah file audio...
+                      </p>
+                      <p className="font-caption text-caption text-on-surface-variant">
+                        Mohon tunggu sebentar.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="font-label-md text-label-md text-on-surface font-semibold">
+                        Pilih file audio atau seret ke sini
+                      </p>
+                      <p className="font-caption text-caption text-on-surface-variant mt-1">
+                        MP3, WAV, atau M4A hingga 20MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Rich Editor Block */}

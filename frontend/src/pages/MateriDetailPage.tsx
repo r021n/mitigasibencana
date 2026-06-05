@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { materialApi } from "../api/api";
 import TopNavbar from "../components/layout/TopNavbar";
@@ -9,9 +9,25 @@ const MateriDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [mode, setMode] = useState<"read" | "listen">("read");
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.8);
+  const [isMuted, setIsMuted] = useState(false);
+
   useEffect(() => {
     fetchMateri();
   }, [id]);
+
+  useEffect(() => {
+    // Reset player state if mode changes or unmounts
+    setIsPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [mode]);
 
   const fetchMateri = async () => {
     try {
@@ -22,6 +38,66 @@ const MateriDetailPage = () => {
       setError(err.message || "Gagal memuat materi");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "00:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => console.error("Error playing audio:", err));
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    setCurrentTime(audioRef.current.currentTime);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!audioRef.current) return;
+    setDuration(audioRef.current.duration);
+  };
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!audioRef.current) return;
+    const value = parseFloat(e.target.value);
+    audioRef.current.currentTime = value;
+    setCurrentTime(value);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!audioRef.current) return;
+    const value = parseFloat(e.target.value);
+    audioRef.current.volume = value;
+    setVolume(value);
+    setIsMuted(value === 0);
+  };
+
+  const toggleMute = () => {
+    if (!audioRef.current) return;
+    if (isMuted) {
+      audioRef.current.volume = volume;
+      setIsMuted(false);
+    } else {
+      audioRef.current.volume = 0;
+      setIsMuted(true);
     }
   };
 
@@ -171,6 +247,28 @@ const MateriDetailPage = () => {
           border-radius: 0;
           font-size: inherit;
         }
+
+        /* Waveform bounce keyframe animations */
+        @keyframes bounce-bar-1 {
+          0%, 100% { transform: scaleY(0.25); }
+          50% { transform: scaleY(0.75); }
+        }
+        @keyframes bounce-bar-2 {
+          0%, 100% { transform: scaleY(0.3); }
+          50% { transform: scaleY(0.95); }
+        }
+        @keyframes bounce-bar-3 {
+          0%, 100% { transform: scaleY(0.2); }
+          50% { transform: scaleY(0.6); }
+        }
+        @keyframes bounce-bar-4 {
+          0%, 100% { transform: scaleY(0.35); }
+          50% { transform: scaleY(1); }
+        }
+        .anim-bar-1 { animation: bounce-bar-1 1s ease-in-out infinite; }
+        .anim-bar-2 { animation: bounce-bar-2 1.2s ease-in-out infinite; }
+        .anim-bar-3 { animation: bounce-bar-3 0.8s ease-in-out infinite; }
+        .anim-bar-4 { animation: bounce-bar-4 1.1s ease-in-out infinite; }
       `}</style>
 
       <TopNavbar />
@@ -234,10 +332,183 @@ const MateriDetailPage = () => {
               </div>
             </div>
 
-            {/* Content (HTML from Editor) */}
-            <div className="materi-prose w-full">
-              <div dangerouslySetInnerHTML={{ __html: materi.content }} />
-            </div>
+            {/* Tab/Switch Pill if audio is available */}
+            {materi.audioUrl && (
+              <div className="flex justify-center mb-10 select-none">
+                <div className="inline-flex bg-surface-container-low border border-outline-variant/30 rounded-2xl p-1.5 gap-1.5 shadow-inner">
+                  <button
+                    onClick={() => setMode("read")}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-label-md text-label-md transition-all cursor-pointer font-bold border-none ${
+                      mode === "read"
+                        ? "bg-primary text-on-primary shadow-[0_4px_12px_rgba(0,74,198,0.2)]"
+                        : "text-on-surface-variant hover:text-primary hover:bg-surface-container-high"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">menu_book</span>
+                    Baca Materi
+                  </button>
+                  <button
+                    onClick={() => setMode("listen")}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-label-md text-label-md transition-all cursor-pointer font-bold border-none ${
+                      mode === "listen"
+                        ? "bg-primary text-on-primary shadow-[0_4px_12px_rgba(0,74,198,0.2)]"
+                        : "text-on-surface-variant hover:text-primary hover:bg-surface-container-high"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">headphones</span>
+                    Dengarkan Materi
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Content Switcher */}
+            {mode === "read" ? (
+              /* Content (HTML from Editor) */
+              <div className="materi-prose w-full">
+                <div dangerouslySetInnerHTML={{ __html: materi.content }} />
+              </div>
+            ) : (
+              /* Immersive Custom Audio Player */
+              <div className="w-full bg-gradient-to-br from-surface-container/40 via-surface-container-low to-surface-container-highest border border-outline-variant/20 rounded-[2rem] p-8 clay-card flex flex-col items-center justify-center relative overflow-hidden shadow-lg mb-10 select-none">
+                {/* Decorative pulsating background rings when playing */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className={`absolute w-[280px] h-[280px] rounded-full bg-primary/5 transition-all duration-1000 ${isPlaying ? 'scale-110 animate-ping' : 'scale-100'}`} style={{ animationDuration: '3s' }} />
+                  <div className={`absolute w-[200px] h-[200px] rounded-full bg-primary/5 transition-all duration-1000 ${isPlaying ? 'scale-125 animate-pulse' : 'scale-100'}`} />
+                </div>
+
+                {/* Headphones Circle Graphic */}
+                <div className="relative mb-6 z-10">
+                  <div className={`w-28 h-28 rounded-full bg-primary/10 border-2 border-primary/20 text-primary flex items-center justify-center shadow-inner transition-all duration-500 ${isPlaying ? 'scale-105 rotate-6' : 'scale-100'}`}>
+                    <span className="material-symbols-outlined text-5xl text-primary animate-pulse" style={{ animationDuration: isPlaying ? '2s' : '0s' }}>
+                      headphones
+                    </span>
+                  </div>
+                </div>
+
+                {/* Text Details */}
+                <div className="text-center z-10 max-w-md mb-8">
+                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-extrabold line-clamp-1 mb-1">
+                    {materi.title}
+                  </h3>
+                  <p className="font-body-md text-body-md text-on-surface-variant">
+                    Diputar oleh {materi.author?.name || "Tim Edukasi"}
+                  </p>
+                </div>
+
+                {/* Waveform/Visualizer Bars */}
+                <div className="flex items-end gap-1.5 h-16 mb-8 z-10">
+                  {[
+                    { delay: '0s', color: 'bg-primary' },
+                    { delay: '0.15s', color: 'bg-primary-container' },
+                    { delay: '0.3s', color: 'bg-secondary' },
+                    { delay: '0.45s', color: 'bg-secondary-fixed-dim' },
+                    { delay: '0.6s', color: 'bg-primary' },
+                    { delay: '0.75s', color: 'bg-primary-container' },
+                    { delay: '0.9s', color: 'bg-secondary' },
+                    { delay: '0.15s', color: 'bg-secondary-fixed-dim' },
+                    { delay: '0.3s', color: 'bg-primary' },
+                    { delay: '0.45s', color: 'bg-primary-container' },
+                  ].map((bar, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-2.5 rounded-full ${bar.color} ${isPlaying ? 'anim-bar-' + ((idx % 4) + 1) : 'h-3'}`}
+                      style={{
+                        animationDelay: isPlaying ? bar.delay : '0s',
+                        transformOrigin: 'bottom',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Scrubber and Time Tracker */}
+                <div className="w-full max-w-md flex flex-col gap-2 z-10 mb-6">
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleScrub}
+                    className="w-full h-2 bg-outline-variant/40 rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none"
+                  />
+                  <div className="flex justify-between font-caption text-caption text-on-surface-variant">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+
+                {/* Custom Audio Control Buttons */}
+                <div className="flex items-center gap-6 z-10">
+                  {/* Skip Backward 10s */}
+                  <button
+                    onClick={() => {
+                      if (audioRef.current) {
+                        audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10);
+                      }
+                    }}
+                    className="p-3 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-full transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
+                    title="Mundur 10 Detik"
+                  >
+                    <span className="material-symbols-outlined text-3xl">replay_10</span>
+                  </button>
+
+                  {/* Play/Pause Main Button */}
+                  <button
+                    onClick={togglePlay}
+                    className="w-16 h-16 bg-primary text-on-primary rounded-full hover:scale-105 active:scale-95 transition-all shadow-[0_6px_20px_rgba(0,74,198,0.3)] flex items-center justify-center cursor-pointer border-none clay-btn"
+                    title={isPlaying ? "Jeda" : "Putar"}
+                  >
+                    <span className="material-symbols-outlined text-4xl select-none">
+                      {isPlaying ? "pause" : "play_arrow"}
+                    </span>
+                  </button>
+
+                  {/* Skip Forward 10s */}
+                  <button
+                    onClick={() => {
+                      if (audioRef.current) {
+                        audioRef.current.currentTime = Math.min(duration, audioRef.current.currentTime + 10);
+                      }
+                    }}
+                    className="p-3 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-full transition-colors cursor-pointer border-none bg-transparent flex items-center justify-center"
+                    title="Maju 10 Detik"
+                  >
+                    <span className="material-symbols-outlined text-3xl">forward_10</span>
+                  </button>
+                </div>
+
+                {/* Volume Controls */}
+                <div className="flex items-center gap-2 mt-8 z-10 w-full max-w-[200px]">
+                  <button
+                    onClick={toggleMute}
+                    className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer border-none bg-transparent p-1 flex items-center justify-center"
+                    title={isMuted ? "Bunyikan" : "Senyap"}
+                  >
+                    <span className="material-symbols-outlined text-2xl">
+                      {isMuted || volume === 0 ? "volume_off" : volume < 0.5 ? "volume_down" : "volume_up"}
+                    </span>
+                  </button>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    className="w-full h-1 bg-outline-variant/40 rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none"
+                  />
+                </div>
+
+                {/* Hidden Native Audio Element */}
+                <audio
+                  ref={audioRef}
+                  src={materi.audioUrl}
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onEnded={handleAudioEnded}
+                />
+              </div>
+            )}
           </article>
         </div>
       </main>

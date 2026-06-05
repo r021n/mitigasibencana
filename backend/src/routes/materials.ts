@@ -46,6 +46,7 @@ materialsRoute.get("/", async (c) => {
     const allMaterials = await db.select({
       id: materials.id,
       title: materials.title,
+      audioUrl: materials.audioUrl,
       status: materials.status,
       createdAt: materials.createdAt,
       updatedAt: materials.updatedAt,
@@ -73,6 +74,7 @@ materialsRoute.get("/:id", async (c) => {
       id: materials.id,
       title: materials.title,
       content: materials.content,
+      audioUrl: materials.audioUrl,
       status: materials.status,
       createdAt: materials.createdAt,
       updatedAt: materials.updatedAt,
@@ -100,7 +102,7 @@ materialsRoute.get("/:id", async (c) => {
 materialsRoute.post("/", authMiddleware, requireAdminOrTeacher, async (c) => {
   try {
     const body = await c.req.json();
-    const { title, content, status } = body;
+    const { title, content, audioUrl, status } = body;
     const user = c.get("user");
 
     if (!title || !content) {
@@ -110,6 +112,7 @@ materialsRoute.post("/", authMiddleware, requireAdminOrTeacher, async (c) => {
     const newMaterial = await db.insert(materials).values({
       title,
       content,
+      audioUrl: audioUrl || null,
       status: status || "draft",
       authorId: user.id,
     }).returning();
@@ -126,7 +129,7 @@ materialsRoute.put("/:id", authMiddleware, requireAdminOrTeacher, async (c) => {
   try {
     const id = c.req.param("id");
     const body = await c.req.json();
-    const { title, content, status } = body;
+    const { title, content, audioUrl, status } = body;
 
     const existingMaterial = await db.select().from(materials).where(eq(materials.id, id));
     if (existingMaterial.length === 0) {
@@ -137,6 +140,7 @@ materialsRoute.put("/:id", authMiddleware, requireAdminOrTeacher, async (c) => {
       .set({
         title,
         content,
+        audioUrl: audioUrl !== undefined ? audioUrl : undefined,
         status,
         updatedAt: Date.now(),
       })
