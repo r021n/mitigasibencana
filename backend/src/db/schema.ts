@@ -25,6 +25,7 @@ export const videos = sqliteTable("videos", {
     ] 
   }).notNull(),
   status: text("status", { enum: ["draft", "publish"] }).default("draft").notNull(),
+  seriesOrder: integer("series_order").default(0).notNull(),
   
   // Analysis fields merged from youtubeAnalyses
   analysisStatus: text("analysis_status", { enum: ["pending", "processing", "completed", "failed"] }),

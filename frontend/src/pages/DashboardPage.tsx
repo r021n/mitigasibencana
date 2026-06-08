@@ -15,6 +15,7 @@ interface Video {
   category: string;
   status: "publish" | "draft";
   icon: string;
+  seriesOrder: number;
 }
 
 export default function DashboardPage() {
@@ -151,31 +152,32 @@ function DashboardInner() {
     setModalVideo(null);
   };
 
+  const handleUpdateOrder = async (id: string, newOrder: number) => {
+    if (newOrder < 0) return;
+    try {
+      await videoApi.edit(id, { seriesOrder: newOrder });
+      fetchVideos(searchQuery);
+    } catch (err: any) {
+      alert(err.message || "Gagal memperbarui urutan");
+    }
+  };
+
   const handleModalSubmit = async (formData: {
     title: string;
     description: string;
     youtubeLink: string;
     category: string;
     status: "publish" | "draft";
+    seriesOrder: number;
   }) => {
     if (modalVideo) {
       // Edit video
-      const updated = await videoApi.edit(modalVideo.id, formData);
-      setVideos((prev) =>
-        prev.map((v) =>
-          v.id === modalVideo.id
-            ? { ...updated, icon: detectIcon(updated.category, updated.title) }
-            : v,
-        ),
-      );
+      await videoApi.edit(modalVideo.id, formData);
     } else {
       // Tambah video
-      const created = await videoApi.create(formData);
-      setVideos((prev) => [
-        ...prev,
-        { ...created, icon: detectIcon(created.category, created.title) },
-      ]);
+      await videoApi.create(formData);
     }
+    fetchVideos(searchQuery);
     handleCloseModal();
   };
 
@@ -278,6 +280,9 @@ function DashboardInner() {
                     <th className="py-4 px-4 font-label-md text-label-md text-on-surface-variant uppercase select-none">
                       Status
                     </th>
+                    <th className="py-4 px-4 font-label-md text-label-md text-on-surface-variant uppercase select-none text-center">
+                      Urutan
+                    </th>
                     <th className="py-4 px-4 font-label-md text-label-md text-on-surface-variant uppercase text-right select-none">
                       Aksi
                     </th>
@@ -369,6 +374,29 @@ function DashboardInner() {
                           >
                             {video.status === "publish" ? "Publish" : "Draft"}
                           </span>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <div className="inline-flex items-center justify-center gap-1.5 bg-surface-container/50 px-2 py-1 rounded-xl border border-outline-variant/20">
+                            <button
+                              aria-label="Naikkan Urutan"
+                              onClick={() => handleUpdateOrder(video.id, video.seriesOrder - 1)}
+                              className="p-1 text-on-surface-variant hover:text-primary rounded hover:bg-surface-container-high cursor-pointer border-none flex items-center justify-center"
+                              title="Naikkan Urutan"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">keyboard_arrow_up</span>
+                            </button>
+                            <span className="font-mono font-bold text-sm min-w-[20px] text-center">
+                              {video.seriesOrder}
+                            </span>
+                            <button
+                              aria-label="Turunkan Urutan"
+                              onClick={() => handleUpdateOrder(video.id, video.seriesOrder + 1)}
+                              className="p-1 text-on-surface-variant hover:text-primary rounded hover:bg-surface-container-high cursor-pointer border-none flex items-center justify-center"
+                              title="Turunkan Urutan"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+                            </button>
+                          </div>
                         </td>
                         <td className="py-4 px-4 text-right">
                           <div className="flex justify-end gap-2">

@@ -32,16 +32,6 @@ export default function TopNavbar() {
             Dashboard
           </Link>
           <Link
-            to="/videos"
-            className={`font-label-md text-label-md px-3 py-2 rounded-lg transition-all duration-200 ${
-              isVideos
-                ? "text-primary bg-surface-container-low"
-                : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low"
-            }`}
-          >
-            Kumpulan Video
-          </Link>
-          <Link
             to="/materi"
             className={`font-label-md text-label-md px-3 py-2 rounded-lg transition-all duration-200 ${
               location.pathname.startsWith("/materi")
@@ -51,6 +41,17 @@ export default function TopNavbar() {
           >
             Materi
           </Link>
+          <Link
+            to="/videos"
+            className={`font-label-md text-label-md px-3 py-2 rounded-lg transition-all duration-200 ${
+              isVideos
+                ? "text-primary bg-surface-container-low"
+                : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low"
+            }`}
+          >
+            Kumpulan Video
+          </Link>
+          
           <Link
             to="#"
             className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg transition-all duration-200"

@@ -277,6 +277,7 @@ interface VideoFormData {
   youtubeLink: string;
   category: string;
   status: "publish" | "draft";
+  seriesOrder: number;
 }
 
 interface Video {
@@ -286,6 +287,7 @@ interface Video {
   youtubeLink: string;
   category: string;
   status: "publish" | "draft";
+  seriesOrder: number;
 }
 
 interface VideoFormModalProps {
@@ -307,6 +309,7 @@ export default function VideoFormModal({
     youtubeLink: "",
     category: "tanah longsor",
     status: "draft",
+    seriesOrder: 0,
   });
   const [saving, setSaving] = useState(false);
 
@@ -319,6 +322,7 @@ export default function VideoFormModal({
           youtubeLink: video.youtubeLink,
           category: video.category || "tanah longsor",
           status: video.status,
+          seriesOrder: video.seriesOrder !== undefined ? video.seriesOrder : 0,
         });
       } else {
         setFormData({
@@ -327,6 +331,7 @@ export default function VideoFormModal({
           youtubeLink: "",
           category: "tanah longsor",
           status: "draft",
+          seriesOrder: 0,
         });
       }
       setSaving(false);
@@ -468,8 +473,8 @@ export default function VideoFormModal({
               />
             </div>
 
-            {/* KATEGORI & STATUS SEJAJAR */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* KATEGORI, STATUS, & URUTAN SEJAJAR */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <div>
                 <label
                   className="block font-label-md text-label-md text-on-surface font-semibold mb-2 select-none"
@@ -530,6 +535,29 @@ export default function VideoFormModal({
                     keyboard_arrow_down
                   </span>
                 </div>
+              </div>
+
+              <div>
+                <label
+                  className="block font-label-md text-label-md text-on-surface font-semibold mb-2 select-none"
+                  htmlFor="video-order"
+                >
+                  Urutan (Series)
+                </label>
+                <input
+                  className="w-full rounded-xl border border-outline-variant/50 bg-surface focus:border-primary focus:outline-none shadow-inner font-body-md text-body-md px-4 py-3"
+                  id="video-order"
+                  type="number"
+                  min="0"
+                  value={formData.seriesOrder}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      seriesOrder: Number(e.target.value),
+                    })
+                  }
+                  required
+                />
               </div>
             </div>
           </div>

@@ -53,6 +53,7 @@ export default function VideoViewPage() {
   const [video, setVideo] = useState<Video | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [seriesVideos, setSeriesVideos] = useState<Video[]>([]);
 
   // Comment Form state
   const [commentContent, setCommentContent] = useState("");
@@ -66,11 +67,15 @@ export default function VideoViewPage() {
   const [isReplying, setIsReplying] = useState(false);
 
   // Interactive Video States
-  const [interactiveQuestions, setInteractiveQuestions] = useState<Question[]>([]);
+  const [interactiveQuestions, setInteractiveQuestions] = useState<Question[]>(
+    [],
+  );
   const [activeQuestion, setActiveQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
-  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [player, setPlayer] = useState<any>(null);
   const [playerState, setPlayerState] = useState<number>(-1);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -96,6 +101,16 @@ export default function VideoViewPage() {
       setVideo(videoRes);
       setComments(commentsRes);
       setInteractiveQuestions(questionsRes);
+
+      if (videoRes && videoRes.category) {
+        const seriesRes = await videoApi.getPublicVideos(
+          1,
+          "",
+          videoRes.category,
+          100,
+        );
+        setSeriesVideos(seriesRes.data);
+      }
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
@@ -116,7 +131,7 @@ export default function VideoViewPage() {
     const initYTPlayer = () => {
       const win = window as any;
       if (!win.YT || !win.YT.Player) return;
-      
+
       try {
         ytPlayer = new win.YT.Player("youtube-player", {
           videoId: ytId,
@@ -191,7 +206,7 @@ export default function VideoViewPage() {
       try {
         const time = player.getCurrentTime();
         setCurrentTime(time);
-        
+
         const dur = player.getDuration();
         if (dur > 0) setDuration(dur);
       } catch (e) {}
@@ -206,7 +221,7 @@ export default function VideoViewPage() {
 
     const currentSec = Math.floor(currentTime);
     const question = interactiveQuestions.find(
-      (q) => q.timestamp === currentSec && !answeredQuestionIds.has(q.id)
+      (q) => q.timestamp === currentSec && !answeredQuestionIds.has(q.id),
     );
 
     if (question) {
@@ -217,7 +232,13 @@ export default function VideoViewPage() {
       setSelectedAnswer(null);
       setIsAnswerSubmitted(false);
     }
-  }, [currentTime, player, interactiveQuestions, answeredQuestionIds, activeQuestion]);
+  }, [
+    currentTime,
+    player,
+    interactiveQuestions,
+    answeredQuestionIds,
+    activeQuestion,
+  ]);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,245 +313,388 @@ export default function VideoViewPage() {
     <>
       <TopNavbar />
 
-      {/* Main Content - 2 Columns */}
+      {/* Main Content */}
       <main className="pt-16 min-h-screen bg-surface flex flex-col">
-        <div className="max-w-container-max w-full mx-auto flex flex-col lg:flex-row gap-8 items-stretch px-margin-desktop py-6">
-          {/* Left Column (Video & Details) - Static on Desktop */}
-          <div className="w-full lg:w-2/3 flex flex-col gap-4 self-start">
-            <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-md relative">
-              {ytId ? (
-                <div className="w-full h-full relative">
-                  <div id="youtube-player" className="w-full h-full"></div>
-                  {activeQuestion && (
-                    <div className="absolute inset-0 bg-inverse-surface/85 backdrop-blur-md flex items-center justify-center p-6 z-30 select-none transition-all duration-300">
-                      <div className="bg-surface text-on-surface rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-outline-variant/10 space-y-4 max-h-full overflow-y-auto hover-scrollbar">
-                        <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                          <span className="material-symbols-outlined text-base">quiz</span>
-                          <span>Pertanyaan Interaktif</span>
-                        </div>
-                        
-                        <h3 className="font-semibold text-on-surface text-body-lg whitespace-pre-wrap leading-snug">
-                          {activeQuestion.question}
-                        </h3>
+        <div className="max-w-container-max w-full mx-auto px-margin-desktop py-6 space-y-6">
+          {/* Top Row: Video Player + Series Playlist */}
+          <div className="flex flex-col lg:flex-row gap-8 items-stretch">
+            {/* Left Column (Video & Details) */}
+            <div className="w-full lg:w-2/3 flex flex-col gap-4 self-start">
+              <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-md relative">
+                {ytId ? (
+                  <div className="w-full h-full relative">
+                    <div id="youtube-player" className="w-full h-full"></div>
+                    {activeQuestion && (
+                      <div className="absolute inset-0 bg-inverse-surface/85 backdrop-blur-md flex items-center justify-center p-6 z-30 select-none transition-all duration-300">
+                        <div className="bg-surface text-on-surface rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-outline-variant/10 space-y-4 max-h-full overflow-y-auto hover-scrollbar">
+                          <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                            <span className="material-symbols-outlined text-base">
+                              quiz
+                            </span>
+                            <span>Pertanyaan Interaktif</span>
+                          </div>
 
-                        <div className="grid grid-cols-1 gap-2.5">
-                          {activeQuestion.options.map((optText, idx) => {
-                            const letter = ["A", "B", "C", "D"][idx];
-                            const isSelected = selectedAnswer === letter;
-                            const isCorrect = activeQuestion.correctAnswer === letter;
-                            
-                            let btnStyle = "bg-surface border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-low";
-                            let badgeStyle = "bg-primary/10 text-primary";
+                          <h3 className="font-semibold text-on-surface text-body-lg whitespace-pre-wrap leading-snug">
+                            {activeQuestion.question}
+                          </h3>
 
-                            if (isAnswerSubmitted) {
-                              if (isCorrect) {
-                                btnStyle = "bg-secondary-container border-secondary text-on-secondary-container font-semibold ring-2 ring-secondary/20";
-                                badgeStyle = "bg-secondary text-on-secondary";
+                          <div className="grid grid-cols-1 gap-2.5">
+                            {activeQuestion.options.map((optText, idx) => {
+                              const letter = ["A", "B", "C", "D"][idx];
+                              const isSelected = selectedAnswer === letter;
+                              const isCorrect =
+                                activeQuestion.correctAnswer === letter;
+
+                              let btnStyle =
+                                "bg-surface border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-low";
+                              let badgeStyle = "bg-primary/10 text-primary";
+
+                              if (isAnswerSubmitted) {
+                                if (isCorrect) {
+                                  btnStyle =
+                                    "bg-secondary-container border-secondary text-on-secondary-container font-semibold ring-2 ring-secondary/20";
+                                  badgeStyle = "bg-secondary text-on-secondary";
+                                } else if (isSelected) {
+                                  btnStyle =
+                                    "bg-error-container/40 border-error text-on-error-container font-semibold ring-2 ring-error/20";
+                                  badgeStyle = "bg-error text-on-error";
+                                } else {
+                                  btnStyle =
+                                    "bg-surface-container-low/50 border-outline-variant/10 text-on-surface-variant/40 opacity-60";
+                                  badgeStyle =
+                                    "bg-outline-variant/20 text-on-surface-variant/50";
+                                }
                               } else if (isSelected) {
-                                btnStyle = "bg-error-container/40 border-error text-on-error-container font-semibold ring-2 ring-error/20";
-                                badgeStyle = "bg-error text-on-error";
-                              } else {
-                                btnStyle = "bg-surface-container-low/50 border-outline-variant/10 text-on-surface-variant/40 opacity-60";
-                                badgeStyle = "bg-outline-variant/20 text-on-surface-variant/50";
+                                btnStyle =
+                                  "bg-primary-container/30 border-primary text-primary font-semibold ring-2 ring-primary/20";
+                                badgeStyle = "bg-primary text-on-primary";
                               }
-                            } else if (isSelected) {
-                              btnStyle = "bg-primary-container/30 border-primary text-primary font-semibold ring-2 ring-primary/20";
-                              badgeStyle = "bg-primary text-on-primary";
-                            }
 
-                            return (
-                              <button
-                                key={letter}
-                                disabled={isAnswerSubmitted}
-                                onClick={() => setSelectedAnswer(letter)}
-                                className={`flex items-start text-left gap-3 p-3 rounded-xl border transition-all cursor-pointer ${btnStyle}`}
-                              >
-                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${badgeStyle}`}>
-                                  {letter}
-                                </span>
-                                <span className="text-sm mt-0.5">{optText}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                              return (
+                                <button
+                                  key={letter}
+                                  disabled={isAnswerSubmitted}
+                                  onClick={() => setSelectedAnswer(letter)}
+                                  className={`flex items-start text-left gap-3 p-3 rounded-xl border transition-all cursor-pointer ${btnStyle}`}
+                                >
+                                  <span
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${badgeStyle}`}
+                                  >
+                                    {letter}
+                                  </span>
+                                  <span className="text-sm mt-0.5">
+                                    {optText}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
 
-                        {isAnswerSubmitted && (
-                          <div className="space-y-3 pt-1 border-t border-outline-variant/25">
-                            <div className="flex items-center gap-2 font-bold text-sm">
-                              {selectedAnswer === activeQuestion.correctAnswer ? (
-                                <div className="flex items-center gap-1.5 text-secondary">
-                                  <span className="material-symbols-outlined">check_circle</span>
-                                  <span>Jawaban Anda Benar!</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1.5 text-error">
-                                  <span className="material-symbols-outlined">cancel</span>
-                                  <span>Jawaban Salah (Benar: {activeQuestion.correctAnswer})</span>
+                          {isAnswerSubmitted && (
+                            <div className="space-y-3 pt-1 border-t border-outline-variant/25">
+                              <div className="flex items-center gap-2 font-bold text-sm">
+                                {selectedAnswer ===
+                                activeQuestion.correctAnswer ? (
+                                  <div className="flex items-center gap-1.5 text-secondary">
+                                    <span className="material-symbols-outlined">
+                                      check_circle
+                                    </span>
+                                    <span>Jawaban Anda Benar!</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 text-error">
+                                    <span className="material-symbols-outlined">
+                                      cancel
+                                    </span>
+                                    <span>
+                                      Jawaban Salah (Benar:{" "}
+                                      {activeQuestion.correctAnswer})
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {activeQuestion.explanation && (
+                                <div className="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/30 text-xs text-on-surface-variant">
+                                  <span className="font-bold text-on-surface flex items-center gap-1 mb-1">
+                                    <span className="material-symbols-outlined text-xs text-primary">
+                                      lightbulb
+                                    </span>
+                                    Pembahasan:
+                                  </span>
+                                  <p className="whitespace-pre-wrap leading-relaxed">
+                                    {activeQuestion.explanation}
+                                  </p>
                                 </div>
                               )}
                             </div>
+                          )}
 
-                            {activeQuestion.explanation && (
-                              <div className="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/30 text-xs text-on-surface-variant">
-                                <span className="font-bold text-on-surface flex items-center gap-1 mb-1">
-                                  <span className="material-symbols-outlined text-xs text-primary">lightbulb</span>
-                                  Pembahasan:
-                                </span>
-                                <p className="whitespace-pre-wrap leading-relaxed">{activeQuestion.explanation}</p>
-                              </div>
+                          <div className="flex justify-end pt-2">
+                            {!isAnswerSubmitted ? (
+                              <button
+                                disabled={!selectedAnswer}
+                                onClick={() => setIsAnswerSubmitted(true)}
+                                className="px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md font-bold rounded-xl clay-btn cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
+                              >
+                                Kirim Jawaban
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setAnsweredQuestionIds((prev) => {
+                                    const next = new Set(prev);
+                                    next.add(activeQuestion.id);
+                                    return next;
+                                  });
+                                  setActiveQuestion(null);
+                                  if (player) {
+                                    player.playVideo();
+                                  }
+                                }}
+                                className="px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md font-bold rounded-xl clay-btn cursor-pointer transition-all active:scale-95"
+                              >
+                                Lanjutkan Video
+                              </button>
                             )}
                           </div>
-                        )}
-
-                        <div className="flex justify-end pt-2">
-                          {!isAnswerSubmitted ? (
-                            <button
-                              disabled={!selectedAnswer}
-                              onClick={() => setIsAnswerSubmitted(true)}
-                              className="px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md font-bold rounded-xl clay-btn cursor-pointer transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
-                            >
-                              Kirim Jawaban
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setAnsweredQuestionIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.add(activeQuestion.id);
-                                  return next;
-                                });
-                                setActiveQuestion(null);
-                                if (player) {
-                                  player.playVideo();
-                                }
-                              }}
-                              className="px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md font-bold rounded-xl clay-btn cursor-pointer transition-all active:scale-95"
-                            >
-                              Lanjutkan Video
-                            </button>
-                          )}
                         </div>
                       </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-white">
+                    Invalid YouTube Link
+                  </div>
+                )}
+              </div>
+
+              {/* Interactive Progress Bar & Question Markers */}
+              {ytId && duration > 0 && (
+                <div className="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/30 select-none">
+                  <div className="flex items-center justify-between text-xs text-on-surface-variant font-semibold mb-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm text-primary">
+                        play_circle
+                      </span>
+                      <span>Waktu Putar</span>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full text-white">
-                  Invalid YouTube Link
+                    <div className="font-mono bg-surface-container-high px-2 py-0.5 rounded text-on-surface">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={(e) => {
+                      if (!player || duration === 0) return;
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const clickX = e.clientX - rect.left;
+                      const percentage = Math.max(
+                        0,
+                        Math.min(1, clickX / rect.width),
+                      );
+                      const targetTime = percentage * duration;
+                      player.seekTo(targetTime, true);
+                      setCurrentTime(targetTime);
+                    }}
+                    className="relative h-2.5 bg-outline-variant/30 rounded-full cursor-pointer hover:h-3 transition-all duration-200 group flex items-center"
+                  >
+                    {/* Active Progress Track */}
+                    <div
+                      style={{ width: `${(currentTime / duration) * 100}%` }}
+                      className="h-full bg-primary rounded-full relative group-hover:bg-primary-container"
+                    ></div>
+
+                    {/* Playhead Handle */}
+                    <div
+                      style={{ left: `${(currentTime / duration) * 100}%` }}
+                      className="absolute w-3.5 h-3.5 bg-surface border-2 border-primary rounded-full -translate-x-1/2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                    ></div>
+
+                    {/* Question Markers / Dots */}
+                    {interactiveQuestions.map((q) => {
+                      const percentage = (q.timestamp / duration) * 100;
+                      const isAnswered = answeredQuestionIds.has(q.id);
+                      return (
+                        <div
+                          key={q.id}
+                          style={{ left: `${percentage}%` }}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent trigger full bar click
+                            if (player) {
+                              player.seekTo(q.timestamp, true);
+                              setCurrentTime(q.timestamp);
+                            }
+                          }}
+                          className={`absolute w-3.5 h-3.5 rounded-full -translate-x-1/2 border-2 border-surface shadow-md cursor-pointer hover:scale-130 transition-transform z-10 ${
+                            isAnswered
+                              ? "bg-secondary"
+                              : "bg-tertiary-container"
+                          }`}
+                          title={`Soal Interaktif di ${formatTime(q.timestamp)} (${isAnswered ? "Selesai" : "Belum Dijawab"})`}
+                        >
+                          {!isAnswered && (
+                            <span className="absolute inset-0 rounded-full animate-ping bg-tertiary-container opacity-45 pointer-events-none"></span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
+
+              <div>
+                <h1 className="font-display-sm text-display-sm font-bold text-on-surface mb-2">
+                  {video.title}
+                </h1>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  {video.ownerName && (
+                    <span className="text-sm text-on-surface-variant flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">
+                        person
+                      </span>
+                      <span>
+                        Oleh:{" "}
+                        <strong className="text-on-surface font-semibold">
+                          {video.ownerName}
+                        </strong>
+                      </span>
+                    </span>
+                  )}
+                  <span className="inline-block bg-primary/10 text-primary text-sm font-bold px-3 py-1 rounded-full">
+                    {video.category}
+                  </span>
+                </div>
+                <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/30">
+                  <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">
+                    {video.description}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* Interactive Progress Bar & Question Markers */}
-            {ytId && duration > 0 && (
-              <div className="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/30 select-none">
-                <div className="flex items-center justify-between text-xs text-on-surface-variant font-semibold mb-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm text-primary">play_circle</span>
-                    <span>Waktu Putar</span>
-                  </div>
-                  <div className="font-mono bg-surface-container-high px-2 py-0.5 rounded text-on-surface">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </div>
-                </div>
-
-                <div 
-                  onClick={(e) => {
-                    if (!player || duration === 0) return;
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
-                    const targetTime = percentage * duration;
-                    player.seekTo(targetTime, true);
-                    setCurrentTime(targetTime);
-                  }}
-                  className="relative h-2.5 bg-outline-variant/30 rounded-full cursor-pointer hover:h-3 transition-all duration-200 group flex items-center"
-                >
-                  {/* Active Progress Track */}
-                  <div 
-                    style={{ width: `${(currentTime / duration) * 100}%` }}
-                    className="h-full bg-primary rounded-full relative group-hover:bg-primary-container"
-                  ></div>
-
-                  {/* Playhead Handle */}
-                  <div 
-                    style={{ left: `${(currentTime / duration) * 100}%` }}
-                    className="absolute w-3.5 h-3.5 bg-surface border-2 border-primary rounded-full -translate-x-1/2 shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                  ></div>
-
-                  {/* Question Markers / Dots */}
-                  {interactiveQuestions.map((q) => {
-                    const percentage = (q.timestamp / duration) * 100;
-                    const isAnswered = answeredQuestionIds.has(q.id);
-                    return (
-                      <div
-                        key={q.id}
-                        style={{ left: `${percentage}%` }}
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent trigger full bar click
-                          if (player) {
-                            player.seekTo(q.timestamp, true);
-                            setCurrentTime(q.timestamp);
-                          }
-                        }}
-                        className={`absolute w-3.5 h-3.5 rounded-full -translate-x-1/2 border-2 border-surface shadow-md cursor-pointer hover:scale-130 transition-transform z-10 ${
-                          isAnswered ? "bg-secondary" : "bg-tertiary-container"
-                        }`}
-                        title={`Soal Interaktif di ${formatTime(q.timestamp)} (${isAnswered ? "Selesai" : "Belum Dijawab"})`}
-                      >
-                        {!isAnswered && (
-                          <span className="absolute inset-0 rounded-full animate-ping bg-tertiary-container opacity-45 pointer-events-none"></span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            <div>
-              <h1 className="font-display-sm text-display-sm font-bold text-on-surface mb-2">
-                {video.title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                {video.ownerName && (
-                  <span className="text-sm text-on-surface-variant flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">
-                      person
-                    </span>
-                    <span>
-                      Oleh:{" "}
-                      <strong className="text-on-surface font-semibold">
-                        {video.ownerName}
-                      </strong>
-                    </span>
+            {/* Right Column (Series Playlist) */}
+            <div className="w-full lg:w-1/3 flex flex-col h-[500px] lg:h-[calc(100vh-120px)] bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden shadow-sm lg:sticky lg:top-24">
+              {/* Playlist Header */}
+              <div className="p-4 border-b border-outline-variant/20 bg-surface-container-low/50">
+                <h2 className="font-headline-md text-headline-md font-bold text-on-surface flex items-center gap-2 capitalize">
+                  <span className="material-symbols-outlined text-primary text-xl">
+                    playlist_play
                   </span>
-                )}
-                <span className="inline-block bg-primary/10 text-primary text-sm font-bold px-3 py-1 rounded-full">
-                  {video.category}
+                  Series: {video.category}
+                </h2>
+                <span className="text-xs text-on-surface-variant font-medium mt-1 block">
+                  {seriesVideos.length} Video dalam Series ini
                 </span>
               </div>
-              <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/30">
-                <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">
-                  {video.description}
-                </p>
+
+              {/* Playlist Scrollable List */}
+              <div className="flex-grow overflow-y-auto hover-scrollbar p-3 flex flex-col gap-2 bg-surface-container-lowest">
+                {seriesVideos.map((v, index) => {
+                  const isCurrent = v.id === video.id;
+                  const vYtId = getYoutubeId(v.youtubeLink);
+                  const vThumbnailUrl = vYtId
+                    ? `https://img.youtube.com/vi/${vYtId}/hqdefault.jpg`
+                    : "https://via.placeholder.com/640x360.png?text=No+Thumbnail";
+
+                  return (
+                    <Link
+                      key={v.id}
+                      to={`/videos/${v.id}`}
+                      className={`flex flex-row gap-3 p-2 rounded-xl transition-all duration-200 border cursor-pointer ${
+                        isCurrent
+                          ? "bg-primary/10 border-primary text-primary font-semibold"
+                          : "bg-surface hover:bg-surface-container-low border-outline-variant/20 text-on-surface hover:border-outline-variant/40"
+                      }`}
+                    >
+                      {/* Tiny Thumbnail */}
+                      <div className="relative w-28 aspect-video rounded-lg overflow-hidden shrink-0 bg-surface-container-high border border-outline-variant/10">
+                        <img
+                          src={vThumbnailUrl}
+                          alt={v.title}
+                          className="w-full h-full object-cover"
+                        />
+                        {isCurrent && (
+                          <div className="absolute inset-0 bg-primary/25 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-primary text-2xl drop-shadow">
+                              volume_up
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {/* Details */}
+                      <div className="flex flex-col justify-center min-w-0">
+                        <span className="text-xs text-on-surface-variant font-bold">
+                          Video {index + 1}
+                        </span>
+                        <h3
+                          className={`text-sm line-clamp-2 mt-0.5 leading-tight ${
+                            isCurrent
+                              ? "text-primary font-bold"
+                              : "text-on-surface font-semibold"
+                          }`}
+                        >
+                          {v.title}
+                        </h3>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* Right Column (Comments) - Fixed Form at Bottom, Scrollable List */}
-          <div className="w-full lg:w-1/3 flex flex-col h-[550px] lg:h-[calc(100vh-120px)] bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden shadow-sm lg:sticky lg:top-24">
-            {/* Header */}
-            <div className="p-4 border-b border-outline-variant/20 bg-surface-container-low/50">
-              <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
-                Komentar ({comments.length})
-              </h2>
-            </div>
+          {/* Comments Section (Span full width of the wrapper - below player + playlist combined) */}
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 overflow-hidden shadow-sm p-6">
+            <h2 className="font-headline-md text-headline-md font-bold text-on-surface mb-6">
+              Refleksi ({comments.length})
+            </h2>
 
-            {/* Comments List - Scrollable */}
-            <div className="flex-grow overflow-y-auto hover-scrollbar p-4 flex flex-col gap-4">
+            {/* Comment Form */}
+            <form
+              onSubmit={handleCommentSubmit}
+              className="flex flex-col gap-3 mb-8 bg-surface-container-low/50 p-4 rounded-xl border border-outline-variant/10"
+            >
+              <span className="font-title-sm text-title-sm font-bold text-on-surface mb-1">
+                Tulis refleksi
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {!user && (
+                  <input
+                    type="text"
+                    placeholder="Nama Anda"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    required
+                    className="px-4 py-2 bg-surface text-on-surface rounded-lg border border-outline-variant/50 focus:border-primary focus:outline-none text-sm"
+                  />
+                )}
+              </div>
+              <textarea
+                placeholder="Tulis refleksi..."
+                value={commentContent}
+                onChange={(e) => setCommentContent(e.target.value)}
+                required
+                rows={3}
+                className="w-full px-4 py-3 bg-surface text-on-surface rounded-lg border border-outline-variant/50 focus:border-primary focus:outline-none text-sm resize-none"
+              ></textarea>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="self-end font-label-md text-label-md bg-primary text-on-primary rounded-full px-6 py-2 shadow-[0_6px_16px_rgba(0,74,198,0.25),inset_2px_2px_4px_rgba(255,255,255,0.3)] active:scale-95 active:translate-y-0.5 active:shadow-none font-semibold text-center disabled:opacity-50 disabled:scale-100 disabled:translate-y-0 disabled:shadow-none transition-all"
+              >
+                {isSubmitting ? "Mengirim..." : "Kirim Refleksi"}
+              </button>
+            </form>
+
+            {/* Comments List */}
+            <div className="flex flex-col gap-6">
               {comments.map((comment) => (
-                <div key={comment.id} className="flex flex-col gap-2">
-                  <div className="flex items-start gap-3">
+                <div
+                  key={comment.id}
+                  className="flex flex-col gap-2 border-b border-outline-variant/20 pb-4 last:border-b-0 last:pb-0"
+                >
+                  <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                       <span className="text-primary font-bold">
                         {comment.authorName.charAt(0).toUpperCase()}
@@ -567,7 +731,7 @@ export default function VideoViewPage() {
                       {replyingTo === comment.id && (
                         <form
                           onSubmit={(e) => handleReplySubmit(e, comment.id)}
-                          className="mt-3 flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50"
+                          className="mt-3 flex flex-col gap-2 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50 max-w-lg"
                         >
                           {!user && (
                             <input
@@ -610,11 +774,11 @@ export default function VideoViewPage() {
 
                       {/* Replies List */}
                       {comment.replies && comment.replies.length > 0 && (
-                        <div className="flex flex-col gap-3 mt-3 ml-4 pl-4 border-l-2 border-outline-variant/30">
+                        <div className="flex flex-col gap-4 mt-4 ml-4 pl-4 border-l-2 border-outline-variant/30">
                           {comment.replies.map((reply) => (
                             <div
                               key={reply.id}
-                              className="flex items-start gap-2"
+                              className="flex items-start gap-3"
                             >
                               <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
                                 <span className="text-secondary font-bold text-xs">
@@ -655,41 +819,10 @@ export default function VideoViewPage() {
                     forum
                   </span>
                   <p className="text-sm">
-                    Belum ada komentar. Jadilah yang pertama!
+                    Belum ada refleksi. Jadilah yang pertama!
                   </p>
                 </div>
               )}
-            </div>
-
-            {/* Comment Form - Sticky at Bottom */}
-            <div className="p-4 border-t border-outline-variant/20 bg-surface-container-low/50 shrink-0">
-              <form onSubmit={handleCommentSubmit} className="flex flex-col gap-3">
-                {!user && (
-                  <input
-                    type="text"
-                    placeholder="Nama Anda"
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    required
-                    className="px-4 py-2 bg-surface text-on-surface rounded-lg border border-outline-variant/50 focus:border-primary focus:outline-none text-sm"
-                  />
-                )}
-                <textarea
-                  placeholder="Tulis komentar..."
-                  value={commentContent}
-                  onChange={(e) => setCommentContent(e.target.value)}
-                  required
-                  rows={2}
-                  className="w-full px-4 py-2 bg-surface text-on-surface rounded-lg border border-outline-variant/50 focus:border-primary focus:outline-none text-sm resize-none"
-                ></textarea>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="self-end font-label-md text-label-md bg-primary text-on-primary rounded-full px-6 py-2 shadow-[0_6px_16px_rgba(0,74,198,0.25),inset_2px_2px_4px_rgba(255,255,255,0.3)] active:scale-95 active:translate-y-0.5 active:shadow-none font-semibold text-center disabled:opacity-50 disabled:scale-100 disabled:translate-y-0 disabled:shadow-none transition-all"
-                >
-                  {isSubmitting ? "Mengirim..." : "Kirim Komentar"}
-                </button>
-              </form>
             </div>
           </div>
         </div>

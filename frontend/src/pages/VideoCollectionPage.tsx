@@ -29,8 +29,6 @@ function getYoutubeId(url: string) {
 
 export default function VideoCollectionPage() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -39,15 +37,15 @@ export default function VideoCollectionPage() {
   const fetchVideos = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await videoApi.getPublicVideos(page, search, category);
+      // Fetch with a large limit (e.g. 100) to get all public videos for category grouping
+      const res = await videoApi.getPublicVideos(1, search, category, 100);
       setVideos(res.data);
-      setTotalPages(res.pagination.totalPages || 1);
     } catch (error) {
       console.error("Failed to fetch videos:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, category]);
+  }, [search, category]);
 
   useEffect(() => {
     fetchVideos();
@@ -56,7 +54,6 @@ export default function VideoCollectionPage() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setSearch(searchInput);
-      setPage(1);
     }, 500);
 
     return () => {
@@ -67,18 +64,10 @@ export default function VideoCollectionPage() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSearch(searchInput);
-    setPage(1);
   };
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCategory(e.target.value);
-    setPage(1);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage);
-    }
   };
 
   return (
@@ -130,7 +119,7 @@ export default function VideoCollectionPage() {
             </div>
           </div>
 
-          {/* Videos Grid */}
+          {/* Videos Grouped by Category in Rows */}
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <span className="material-symbols-outlined text-5xl text-primary animate-spin">
@@ -147,94 +136,87 @@ export default function VideoCollectionPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-6">
-              {videos.map((video) => {
-                const ytId = getYoutubeId(video.youtubeLink);
-                const thumbnailUrl = ytId
-                  ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
-                  : "https://via.placeholder.com/640x360.png?text=No+Thumbnail";
+            <div className="space-y-12">
+              {CATEGORIES.filter((c) => !category || c.value === category).map((c) => {
+                const categoryVideos = videos.filter((v) => v.category === c.value);
+                if (categoryVideos.length === 0) return null;
+
+                // Detect category icon
+                let iconName = "video_library";
+                if (c.value === "tanah longsor") iconName = "landslide";
+                else if (c.value === "angin puting beliung") iconName = "cyclone";
+                else if (c.value === "gempa bumi") iconName = "earthquake";
+                else if (c.value === "banjir") iconName = "flood";
+                else if (c.value === "tsunami") iconName = "tsunami";
+                else if (c.value === "letusan gunung berapi") iconName = "volcano";
 
                 return (
-                  <Link
-                    key={video.id}
-                    to={`/videos/${video.id}`}
-                    className="flex flex-col gap-3 group cursor-pointer"
-                  >
-                    <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-surface-container-high">
-                      <img
-                        src={thumbnailUrl}
-                        alt={video.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          // Fallback to hqdefault if maxresdefault doesn't exist
-                          if (
-                            ytId &&
-                            e.currentTarget.src.includes("maxresdefault")
-                          ) {
-                            e.currentTarget.src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
-                          }
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-white text-5xl drop-shadow-md">
-                          play_circle
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1 px-1">
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface truncate group-hover:text-primary transition-colors">
-                        {video.title}
-                      </h3>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
-                        {video.description}
-                      </p>
-                      <span className="inline-block mt-1 bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-md w-max">
-                        {video.category}
+                  <section key={c.value} className="space-y-4">
+                    {/* Category Title Header */}
+                    <div className="flex items-center gap-3 border-b border-outline-variant/30 pb-2.5">
+                      <span
+                        className="material-symbols-outlined text-primary text-2xl"
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        {iconName}
+                      </span>
+                      <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface capitalize">
+                        {c.label}
+                      </h2>
+                      <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
+                        {categoryVideos.length} Video
                       </span>
                     </div>
-                  </Link>
+
+                    {/* Horizontal Scroll Row */}
+                    <div className="flex flex-row overflow-x-auto gap-6 pb-4 snap-x snap-mandatory scrollbar-thin hover-scrollbar">
+                      {categoryVideos.map((video) => {
+                        const ytId = getYoutubeId(video.youtubeLink);
+                        const thumbnailUrl = ytId
+                          ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
+                          : "https://via.placeholder.com/640x360.png?text=No+Thumbnail";
+
+                        return (
+                          <Link
+                            key={video.id}
+                            to={`/videos/${video.id}`}
+                            className="flex flex-col gap-3 group cursor-pointer w-[280px] sm:w-[320px] shrink-0 snap-start"
+                          >
+                            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-surface-container-high shadow-sm border border-outline-variant/10">
+                              <img
+                                src={thumbnailUrl}
+                                alt={video.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  if (
+                                    ytId &&
+                                    e.currentTarget.src.includes("maxresdefault")
+                                  ) {
+                                    e.currentTarget.src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+                                  }
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-white text-5xl drop-shadow-md">
+                                  play_circle
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1 px-1">
+                              <h3 className="font-title-md text-title-md text-on-surface truncate group-hover:text-primary transition-colors font-bold">
+                                {video.title}
+                              </h3>
+                              <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 min-h-[40px]">
+                                {video.description}
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </section>
                 );
               })}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {!isLoading && (
-            <div className="flex justify-center items-center gap-2 pt-8">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-                className="p-2 rounded-full hover:bg-surface-container-highest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors text-on-surface"
-              >
-                <span className="material-symbols-outlined">chevron_left</span>
-              </button>
-
-              <div className="flex items-center gap-1">
-                {Array.from(
-                  { length: Math.max(1, totalPages) },
-                  (_, i) => i + 1,
-                ).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => handlePageChange(p)}
-                    className={`w-10 h-10 rounded-full font-label-md flex items-center justify-center transition-colors ${
-                      page === p
-                        ? "bg-primary text-on-primary font-bold shadow-md"
-                        : "text-on-surface hover:bg-surface-container-highest"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages || totalPages === 0}
-                className="p-2 rounded-full hover:bg-surface-container-highest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors text-on-surface"
-              >
-                <span className="material-symbols-outlined">chevron_right</span>
-              </button>
             </div>
           )}
         </div>

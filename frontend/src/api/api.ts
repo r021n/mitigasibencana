@@ -59,11 +59,12 @@ export const authApi = {
 };
 
 export const videoApi = {
-  getPublicVideos: async (page: number = 1, q: string = "", category: string = "") => {
+  getPublicVideos: async (page: number = 1, q: string = "", category: string = "", limit: number = 15) => {
     const params = new URLSearchParams({
       page: page.toString(),
       q,
       category,
+      limit: limit.toString(),
     });
     return fetchWithAuth(`/videos/public?${params.toString()}`, {
       method: "GET",
@@ -85,13 +86,13 @@ export const videoApi = {
       method: "GET",
     });
   },
-  create: async (videoData: { title: string; description: string; youtubeLink: string; category: string; status: "publish" | "draft" }) => {
+  create: async (videoData: { title: string; description: string; youtubeLink: string; category: string; status: "publish" | "draft"; seriesOrder?: number }) => {
     return fetchWithAuth("/videos", {
       method: "POST",
       body: JSON.stringify(videoData),
     });
   },
-  edit: async (id: string, videoData: { title?: string; description?: string; youtubeLink?: string; category?: string; status?: "publish" | "draft" }) => {
+  edit: async (id: string, videoData: { title?: string; description?: string; youtubeLink?: string; category?: string; status?: "publish" | "draft"; seriesOrder?: number }) => {
     return fetchWithAuth(`/videos/${id}`, {
       method: "PUT",
       body: JSON.stringify(videoData),

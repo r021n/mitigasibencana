@@ -36,25 +36,39 @@ export default function Sidebar() {
       <BaseSidebar>
         {/* Sidebar Toggle and Brand Header (Portal Guru added when expanded) */}
         <div
-          className={`mb-6 flex items-center ${
-            open ? "justify-between" : "justify-center"
-          } min-h-[40px]`}
+          className={`mb-6 flex flex-col gap-3`}
         >
-          {open && (
-            <div className="select-none">
-              <h1 className="font-headline-sm text-headline-sm text-primary tracking-tight font-bold">
-                Portal Guru
-              </h1>
-            </div>
-          )}
+          <div className={`flex items-center ${
+            open ? "justify-between" : "justify-center"
+          } min-h-[40px]`}>
+            {open && (
+              <div className="select-none">
+                <h1 className="font-headline-sm text-headline-sm text-primary tracking-tight font-bold">
+                  Portal Guru
+                </h1>
+              </div>
+            )}
+            <button
+              onClick={toggleSidebar}
+              className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg cursor-pointer border-none bg-transparent flex items-center justify-center"
+              title={open ? "Perkecil Sidebar" : "Perluas Sidebar"}
+            >
+              <span className="material-symbols-outlined text-2xl font-bold">
+                {open ? "menu_open" : "menu"}
+              </span>
+            </button>
+          </div>
+
+          {/* Back to Home Link */}
           <button
-            onClick={toggleSidebar}
-            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg cursor-pointer border-none bg-transparent flex items-center justify-center"
-            title={open ? "Perkecil Sidebar" : "Perluas Sidebar"}
+            onClick={() => navigate("/")}
+            className={`flex items-center gap-2 text-on-surface-variant hover:text-primary hover:bg-surface-container/50 px-3 py-2 rounded-lg cursor-pointer border-none bg-transparent transition-all duration-200 text-left font-label-md text-label-md ${
+              open ? "w-full justify-start" : "w-10 h-10 justify-center p-0 mx-auto"
+            }`}
+            title="Kembali ke Beranda"
           >
-            <span className="material-symbols-outlined text-2xl font-bold">
-              {open ? "menu_open" : "menu"}
-            </span>
+            <span className="material-symbols-outlined text-xl">arrow_back</span>
+            {open && <span>Kembali ke Beranda</span>}
           </button>
         </div>
 

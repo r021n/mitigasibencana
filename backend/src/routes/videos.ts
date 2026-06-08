@@ -24,7 +24,7 @@ videosRoute.get("/public", async (c) => {
     const q = c.req.query("q")?.trim() || "";
     const categoryRaw = c.req.query("category")?.trim() || "";
     const page = parseInt(c.req.query("page") || "1");
-    const limit = 15;
+    const limit = parseInt(c.req.query("limit") || "15");
     const offset = (page - 1) * limit;
 
     let conditions = [eq(videos.status, "publish")];
@@ -45,9 +45,11 @@ videosRoute.get("/public", async (c) => {
         description: videos.description,
         youtubeLink: videos.youtubeLink,
         category: videos.category,
+        seriesOrder: videos.seriesOrder,
       })
       .from(videos)
       .where(whereClause)
+      .orderBy(videos.seriesOrder)
       .limit(limit)
       .offset(offset);
 
@@ -82,6 +84,7 @@ videosRoute.get("/public/:id", async (c) => {
         description: videos.description,
         youtubeLink: videos.youtubeLink,
         category: videos.category,
+        seriesOrder: videos.seriesOrder,
         ownerName: users.name,
       })
       .from(videos)
@@ -163,20 +166,25 @@ videosRoute.get("/", async (c) => {
         youtubeLink: videos.youtubeLink,
         category: videos.category,
         status: videos.status,
+        seriesOrder: videos.seriesOrder,
       })
       .from(videos)
       .innerJoin(userVideos, eq(videos.id, userVideos.videoId));
 
     let result;
     if (q && q.trim()) {
-      result = await query.where(
-        and(
-          eq(userVideos.userId, userId),
-          like(videos.title, `%${q.trim()}%`)
+      result = await query
+        .where(
+          and(
+            eq(userVideos.userId, userId),
+            like(videos.title, `%${q.trim()}%`)
+          )
         )
-      );
+        .orderBy(videos.category, videos.seriesOrder);
     } else {
-      result = await query.where(eq(userVideos.userId, userId));
+      result = await query
+        .where(eq(userVideos.userId, userId))
+        .orderBy(videos.category, videos.seriesOrder);
     }
 
     return c.json(result);
@@ -200,6 +208,7 @@ videosRoute.get("/:id", async (c) => {
         youtubeLink: videos.youtubeLink,
         category: videos.category,
         status: videos.status,
+        seriesOrder: videos.seriesOrder,
       })
       .from(videos)
       .innerJoin(userVideos, eq(videos.id, userVideos.videoId))
@@ -221,7 +230,7 @@ videosRoute.post("/", async (c) => {
   try {
     const userId = c.get("userId") as string;
     const body = await c.req.json();
-    const { title, description, youtubeLink, category, status } = body;
+    const { title, description, youtubeLink, category, status, seriesOrder } = body;
 
     if (!title || !youtubeLink || !category) {
       return c.json({ error: "Title, YouTube link, and category are required" }, 400);
@@ -236,6 +245,7 @@ videosRoute.post("/", async (c) => {
         youtubeLink,
         category,
         status: status || "draft",
+        seriesOrder: seriesOrder !== undefined ? Number(seriesOrder) : 0,
       })
       .returning();
 
@@ -260,7 +270,7 @@ videosRoute.put("/:id", async (c) => {
     const userId = c.get("userId") as string;
     const id = c.req.param("id");
     const body = await c.req.json();
-    const { title, description, youtubeLink, category, status } = body;
+    const { title, description, youtubeLink, category, status, seriesOrder } = body;
 
     // Check ownership first
     const ownership = await db
@@ -281,6 +291,7 @@ videosRoute.put("/:id", async (c) => {
         youtubeLink: youtubeLink !== undefined ? youtubeLink : undefined,
         category: category !== undefined ? category : undefined,
         status: status !== undefined ? status : undefined,
+        seriesOrder: seriesOrder !== undefined ? Number(seriesOrder) : undefined,
       })
       .where(eq(videos.id, id))
       .returning();
