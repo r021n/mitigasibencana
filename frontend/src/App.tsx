@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import SimpleBar from 'simplebar-react';
+import 'simplebar-react/dist/simplebar.min.css';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
@@ -12,6 +14,7 @@ import MateriDetailPage from './pages/MateriDetailPage';
 import MateriManagementPage from './pages/MateriManagementPage';
 import MateriEditorPage from './pages/MateriEditorPage';
 import InteractiveQuestionsPage from './pages/InteractiveQuestionsPage';
+import AboutPage from './pages/AboutPage';
 import { useAuthStore } from './store/authStore';
 import { useAccessibilityStore } from './store/accessibilityStore';
 import InclusionWidget from './components/ui/InclusionWidget';
@@ -153,27 +156,30 @@ function App() {
   }, [ttsOnHover]);
 
   return (
-    <div className="bg-background text-on-background font-body-md min-h-screen flex flex-col">
-      <div className="app-main-content flex-1 flex flex-col">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/register" element={<AuthPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/videos/:id/questions" element={<InteractiveQuestionsPage />} />
-          <Route path="/videos" element={<VideoCollectionPage />} />
-          <Route path="/videos/:id" element={<VideoViewPage />} />
-          <Route path="/settings" element={<UserInfoPage />} />
-          <Route path="/analysis" element={<VideoAnalysisPage />} />
-          <Route path="/materi" element={<MateriListPage />} />
-          <Route path="/materi/:id" element={<MateriDetailPage />} />
-          <Route path="/admin/materi" element={<MateriManagementPage />} />
-          <Route path="/admin/materi/editor" element={<MateriEditorPage />} />
-          <Route path="/admin/materi/editor/:id" element={<MateriEditorPage />} />
-        </Routes>
+    <SimpleBar style={{ height: '100vh' }} autoHide={true}>
+      <div className="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+        <div className="app-main-content flex-1 flex flex-col">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/register" element={<AuthPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard/videos/:id/questions" element={<InteractiveQuestionsPage />} />
+            <Route path="/videos" element={<VideoCollectionPage />} />
+            <Route path="/videos/:id" element={<VideoViewPage />} />
+            <Route path="/settings" element={<UserInfoPage />} />
+            <Route path="/analysis" element={<VideoAnalysisPage />} />
+            <Route path="/materi" element={<MateriListPage />} />
+            <Route path="/materi/:id" element={<MateriDetailPage />} />
+            <Route path="/admin/materi" element={<MateriManagementPage />} />
+            <Route path="/admin/materi/editor" element={<MateriEditorPage />} />
+            <Route path="/admin/materi/editor/:id" element={<MateriEditorPage />} />
+          </Routes>
+        </div>
+        <InclusionWidget />
       </div>
-      <InclusionWidget />
-    </div>
+    </SimpleBar>
   );
 }
 

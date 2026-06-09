@@ -114,10 +114,7 @@
 @layer base {
   html, body {
     min-height: 100vh;
-    overflow-x: hidden;
-    overflow-y: overlay;
-    scrollbar-color: rgba(11, 28, 48, 0.2) transparent;
-    scrollbar-width: thin;
+    overflow: hidden;
     font-size: calc(16px * var(--accessibility-font-scale, 1));
     line-height: calc(1.5 * var(--accessibility-line-height-scale, 1));
   }
@@ -234,4 +231,22 @@
 
 .hover-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary, #004ac6) !important;
+}
+
+/* Custom SimpleBar styles to match the blue theme */
+.simplebar-scrollbar::before {
+  background-color: var(--color-primary, #004ac6) !important;
+  border-radius: 9999px !important;
+}
+
+.simplebar-scrollbar.simplebar-visible::before {
+  opacity: 0.75 !important;
+}
+
+.simplebar-track.simplebar-vertical {
+  width: 10px !important;
+}
+
+.simplebar-track.simplebar-horizontal {
+  height: 10px !important;
 }

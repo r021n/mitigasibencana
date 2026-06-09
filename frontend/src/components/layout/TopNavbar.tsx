@@ -7,6 +7,7 @@ export default function TopNavbar() {
 
   const isVideos = location.pathname.startsWith("/videos");
   const isDashboard = location.pathname.startsWith("/dashboard");
+  const isAbout = location.pathname.startsWith("/about");
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-surface/80 backdrop-blur-md shadow-sm border-b border-outline-variant/30">
@@ -53,8 +54,12 @@ export default function TopNavbar() {
           </Link>
           
           <Link
-            to="#"
-            className="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low px-3 py-2 rounded-lg transition-all duration-200"
+            to="/about"
+            className={`font-label-md text-label-md px-3 py-2 rounded-lg transition-all duration-200 ${
+              isAbout
+                ? "text-primary bg-surface-container-low"
+                : "text-on-surface-variant hover:text-primary hover:bg-surface-container-low"
+            }`}
           >
             Tentang Kami
           </Link>
