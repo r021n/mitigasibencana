@@ -164,10 +164,10 @@ export const analysisQueue = {
         throw new Error("Durasi video melebihi batas maksimal yang diizinkan (6 menit).");
       }
 
-      // Update Judul di Database (hanya jika judul kosong atau generic)
+      // Update waktu pembaruan di Database (tidak mengubah judul/nama video)
       await db
         .update(videos)
-        .set({ title: videoTitle, analysisUpdatedAt: Date.now() })
+        .set({ analysisUpdatedAt: Date.now() })
         .where(eq(videos.id, jobId));
 
       // 2. Download Video (240p / worst resolution)

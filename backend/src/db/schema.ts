@@ -106,6 +106,16 @@ export const materials = sqliteTable("materials", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   audioUrl: text("audio_url"),
+  category: text("category", { 
+    enum: [
+      "tanah longsor", 
+      "angin puting beliung", 
+      "gempa bumi", 
+      "banjir", 
+      "tsunami", 
+      "letusan gunung berapi"
+    ] 
+  }).default("gempa bumi").notNull(),
   authorId: text("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   status: text("status", { enum: ["draft", "publish"] }).default("draft").notNull(),
   createdAt: integer("created_at").notNull().$defaultFn(() => Date.now()),
