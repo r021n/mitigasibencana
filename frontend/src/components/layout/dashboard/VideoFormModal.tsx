@@ -404,7 +404,7 @@ export default function VideoFormModal({
           <p className="font-caption text-caption text-on-surface-variant mt-1">
             {video
               ? "Perbarui informasi mengenai materi video simulasi kebencanaan."
-              : "Tambahkan materi video kebencanaan baru ke dalam sistem pembelajaran."}
+              : "Tambahkan materi video kebencanaan baru. Pastikan video memenuhi ketentuan proyek (3-5 menit, landscape 16:9, terintegrasi materi IPA)."}
           </p>
         </div>
 
@@ -558,6 +558,9 @@ export default function VideoFormModal({
                   }
                   required
                 />
+                <p className="text-[10px] text-on-surface-variant/80 mt-1 select-none leading-normal">
+                  Seri 1: Pengenalan | Seri 2: Penerapan | Seri 3: Kearifan Lokal | Seri 4: Inovasi
+                </p>
               </div>
             </div>
           </div>

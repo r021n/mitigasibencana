@@ -38,6 +38,7 @@ function DashboardInner() {
   }, [user, navigate]);
 
   const [videos, setVideos] = useState<Video[]>([]);
+  const [showGuidelines, setShowGuidelines] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -228,19 +229,134 @@ function DashboardInner() {
                 Anda.
               </p>
             </div>
-            <button
-              className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-label-md text-label-md py-3 px-6 rounded-xl clay-btn cursor-pointer font-bold border-none"
-              onClick={handleAddClick}
-            >
-              <span
-                aria-hidden="true"
-                className="material-symbols-outlined text-[20px]"
+            <div className="flex items-center gap-3">
+              <button
+                className="inline-flex items-center justify-center gap-2 bg-surface-container text-on-surface-variant hover:text-primary font-label-md text-label-md py-3 px-5 rounded-xl clay-btn cursor-pointer font-bold border-none"
+                onClick={() => setShowGuidelines(!showGuidelines)}
               >
-                add_circle
-              </span>
-              Unggah Video Baru
-            </button>
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+                  {showGuidelines ? "visibility_off" : "menu_book"}
+                </span>
+                {showGuidelines ? "Sembunyikan Panduan" : "Lihat Panduan Proyek"}
+              </button>
+              <button
+                className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-label-md text-label-md py-3 px-6 rounded-xl clay-btn cursor-pointer font-bold border-none"
+                onClick={handleAddClick}
+              >
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-outlined text-[20px]"
+                >
+                  add_circle
+                </span>
+                Unggah Video Baru
+              </button>
+            </div>
           </header>
+
+          {/* Collapsible Guidelines Card */}
+          {showGuidelines && (
+            <div className="bg-surface-container-lowest rounded-3xl p-6 clay-card border border-outline-variant/15 transition-all duration-300 ease-in-out">
+              <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4 mb-4 select-none">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-inner">
+                    <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      menu_book
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface text-[18px] lg:text-[20px]">
+                      Ketentuan Proyek Video Series
+                    </h3>
+                    <p className="font-caption text-caption text-on-surface-variant mt-0.5">
+                      Integrasi Pembelajaran IPA dan Mitigasi Bencana
+                    </p>
+                  </div>
+                </div>
+                <button
+                  aria-label="Tutup Panduan"
+                  onClick={() => setShowGuidelines(false)}
+                  className="w-8 h-8 rounded-full bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container cursor-pointer border-none flex items-center justify-center transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+
+              <div className="mb-5 bg-surface-container-low/50 rounded-2xl p-4 border border-outline-variant/10 select-none">
+                <h4 className="font-label-md text-label-md text-primary font-bold mb-1">
+                  Deskripsi Proyek
+                </h4>
+                <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                  Mahasiswa sebagai calon guru IPA membuat proyek video series edukasi mitigasi bencana yang terintegrasi dengan materi IPA. Video dibuat secara berkelanjutan antarvideo sehingga membentuk alur berpikir yang sistematis dan saling terhubung.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* A. Ketentuan Umum */}
+                <div className="bg-surface-container-low/30 rounded-2xl p-4 border border-outline-variant/10 flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-primary">
+                    <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      assignment_turned_in
+                    </span>
+                    <h5 className="font-label-md text-label-md font-bold">A. Ketentuan Umum</h5>
+                  </div>
+                  <ul className="text-xs text-on-surface-variant list-disc pl-4 space-y-1.5 leading-relaxed">
+                    <li>Minimal <strong>3 video</strong>.</li>
+                    <li>Durasi <strong>3-5 menit</strong> per video.</li>
+                    <li>Format <strong>MP4</strong>, orientasi <strong>landscape (16:9)</strong>.</li>
+                    <li>Diunggah ke YouTube, tautan diunggah ke web ini.</li>
+                  </ul>
+                </div>
+
+                {/* B. Alur Video Series */}
+                <div className="bg-surface-container-low/30 rounded-2xl p-4 border border-outline-variant/10 flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-secondary">
+                    <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      alt_route
+                    </span>
+                    <h5 className="font-label-md text-label-md font-bold">B. Alur Video Series</h5>
+                  </div>
+                  <ol className="text-xs text-on-surface-variant list-decimal pl-4 space-y-1 leading-relaxed">
+                    <li><strong>Video 1:</strong> Pengenalan konsep IPA & Hubungan Bencana.</li>
+                    <li><strong>Video 2:</strong> Penerapan konsep IPA dalam Mitigasi.</li>
+                    <li><strong>Video 3:</strong> Penerapan produk & Kearifan Lokal.</li>
+                    <li><strong>Video 4:</strong> Simulasi/Inovasi mitigasi lainnya.</li>
+                  </ol>
+                </div>
+
+                {/* C. Perencanaan Proyek */}
+                <div className="bg-surface-container-low/30 rounded-2xl p-4 border border-outline-variant/10 flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-tertiary">
+                    <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      architecture
+                    </span>
+                    <h5 className="font-label-md text-label-md font-bold">C. Perencanaan</h5>
+                  </div>
+                  <ul className="text-xs text-on-surface-variant list-disc pl-4 space-y-1 leading-relaxed">
+                    <li>Wajib menyusun rancangan sebelum membuat video.</li>
+                    <li>Tentukan Materi IPA (contoh: getaran, siklus air).</li>
+                    <li>Integrasikan materi IPA dengan Mitigasi Bencana.</li>
+                    <li>Tentukan produk/media mitigasi & judul video.</li>
+                  </ul>
+                </div>
+
+                {/* D. Aksesibilitas & Inklusi */}
+                <div className="bg-surface-container-low/30 rounded-2xl p-4 border border-outline-variant/10 flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-error">
+                    <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      accessibility_new
+                    </span>
+                    <h5 className="font-label-md text-label-md font-bold text-error">D. Inklusivitas</h5>
+                  </div>
+                  <ul className="text-xs text-on-surface-variant list-disc pl-4 space-y-1.5 leading-relaxed">
+                    <li>Wajib memperhatikan kebutuhan peserta didik berkebutuhan khusus.</li>
+                    <li>Sertakan subtitle/caption jelas jika diperlukan.</li>
+                    <li>Pastikan visual & audio kontras dan jelas didengar.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Search Bar and Statistics Counter */}
           <div className="flex items-center justify-between bg-surface-container-low rounded-2xl p-4 shadow-[inset_1px_1px_3px_rgba(11,28,48,0.05)] border border-outline-variant/10">
